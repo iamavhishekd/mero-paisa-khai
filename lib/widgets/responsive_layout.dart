@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:paisa_khai/screens/categories_screen.dart';
 import 'package:paisa_khai/screens/dashboard_screen.dart';
-import 'package:paisa_khai/screens/import_export_screen.dart';
+import 'package:paisa_khai/screens/settings_screen.dart';
 import 'package:paisa_khai/screens/sources_screen.dart';
 import 'package:paisa_khai/screens/transaction_history_screen.dart';
 
@@ -20,7 +20,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     const CategoriesScreen(),
     const SourcesScreen(),
     const TransactionHistoryScreen(),
-    const ImportExportScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -101,9 +101,9 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           const SizedBox(height: 8),
           _buildSidebarItem(
             index: 4,
-            icon: Icons.tune_outlined,
-            selectedIcon: Icons.tune_rounded,
-            label: 'MORE',
+            icon: Icons.settings_outlined,
+            selectedIcon: Icons.settings_rounded,
+            label: 'SETTINGS',
           ),
         ],
       ),
@@ -168,7 +168,9 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+          top: BorderSide(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+          ),
         ),
       ),
       child: BottomNavigationBar(
@@ -241,13 +243,13 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           BottomNavigationBarItem(
             icon: Padding(
               padding: EdgeInsets.only(bottom: 4),
-              child: Icon(Icons.tune_outlined, size: 20),
+              child: Icon(Icons.settings_outlined, size: 20),
             ),
             activeIcon: Padding(
               padding: EdgeInsets.only(bottom: 4),
-              child: Icon(Icons.tune_rounded, size: 20),
+              child: Icon(Icons.settings_rounded, size: 20),
             ),
-            label: 'MORE',
+            label: 'SETTINGS',
           ),
         ],
       ),

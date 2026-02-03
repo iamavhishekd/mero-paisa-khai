@@ -146,4 +146,18 @@ class HiveService {
   static Box<Source> get sourcesBoxInstance => Hive.box<Source>(sourcesBox);
 
   static Box<dynamic> get settingsBoxInstance => Hive.box(settingsBox);
+
+  static Future<void> clearAndReset() async {
+    await transactionsBoxInstance.clear();
+    await categoriesBoxInstance.clear();
+    await sourcesBoxInstance.clear();
+
+    // Reset initial setup flag
+    await settingsBoxInstance.put('initial_setup_done', false);
+
+    // Re-initialize defaults
+    await _initializeDefaultCategories();
+    await _initializeDefaultSources();
+    await settingsBoxInstance.put('initial_setup_done', true);
+  }
 }
