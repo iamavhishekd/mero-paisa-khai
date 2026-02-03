@@ -37,6 +37,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   List<Category> _availableCategories = [];
   List<Source> _availableSources = [];
   final Map<String, double> _sourceSplits = {};
+  final Map<String, TextEditingController> _sourceControllers = {};
 
   @override
   void initState() {
@@ -47,10 +48,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _loadSources() {
     _availableSources = HiveService.sourcesBoxInstance.values.toList();
-    if (_availableSources.isNotEmpty) {
-      // By default, assign the full amount to the first source if no splits exist
-      // But we don't know the amount yet. We'll handle this in the UI.
+    for (final source in _availableSources) {
+      _sourceControllers[source.id] = TextEditingController();
     }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _sourceControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   void _loadCategories() {
@@ -96,11 +104,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
+  void _autoBalanceSources([String? editedSourceId]) {
+    // Auto-fill disabled as per user request
+  }
+
   Future<void> _saveTransaction() async {
     if (_formKey.currentState!.validate() && _selectedCategory != null) {
       _formKey.currentState!.save();
 
-      // Validate source splits
+      if (_sourceSplits.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one funding source'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Validate source splits (re-check just in case)
       final totalSplits = _sourceSplits.values.fold(
         0.0,
         (sum, amount) => sum + amount,
@@ -249,7 +271,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: _saveTransaction,
+                onPressed:
+                    _amount > 0 &&
+                        _sourceSplits.isNotEmpty &&
+                        (_sourceSplits.values.fold(0.0, (s, a) => s + a) -
+                                    _amount)
+                                .abs() <
+                            0.01
+                    ? _saveTransaction
+                    : null,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
@@ -874,16 +904,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           onChanged: (val) {
                             setState(() {
                               if (val == true) {
-                                final currentTotal = _sourceSplits.values.fold(
-                                  0.0,
-                                  (s, a) => s + a,
-                                );
-                                final remaining = _amount - currentTotal;
-                                _sourceSplits[source.id] = remaining > 0
-                                    ? remaining
-                                    : 0.0;
+                                _sourceSplits[source.id] = 0.0;
+                                _sourceControllers[source.id]?.text = '';
                               } else {
                                 _sourceSplits.remove(source.id);
+                                _sourceControllers[source.id]?.clear();
                               }
                             });
                           },
@@ -900,15 +925,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           Padding(
                             padding: const EdgeInsets.only(left: 48),
                             child: TextFormField(
-                              initialValue: _sourceSplits[source.id]
-                                  ?.toStringAsFixed(2),
+                              controller: _sourceControllers[source.id],
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
                               decoration: InputDecoration(
                                 prefixText: '\$ ',
-                                hintText: 'Amount',
+                                hintText: '0.00',
                                 isDense: true,
                                 filled: true,
                                 fillColor: theme.colorScheme.onSurface
@@ -919,10 +943,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                 ),
                               ),
                               onChanged: (v) {
+                                final parsed = double.tryParse(v) ?? 0.0;
+
+                                // Calculate total of other selected sources
+                                double otherTotal = 0;
+                                for (var entry in _sourceSplits.entries) {
+                                  if (entry.key != source.id) {
+                                    otherTotal += entry.value;
+                                  }
+                                }
+
+                                double finalVal = parsed;
+                                if (otherTotal + finalVal > _amount) {
+                                  finalVal = _amount - otherTotal;
+                                  if (finalVal < 0) finalVal = 0;
+
+                                  // Update text field to capped value
+                                  _sourceControllers[source.id]?.text = finalVal
+                                      .toStringAsFixed(2);
+                                  _sourceControllers[source.id]?.selection =
+                                      TextSelection.fromPosition(
+                                        TextPosition(
+                                          offset: _sourceControllers[source.id]!
+                                              .text
+                                              .length,
+                                        ),
+                                      );
+                                }
+
                                 setState(() {
-                                  _sourceSplits[source.id] =
-                                      double.tryParse(v) ?? 0.0;
+                                  _sourceSplits[source.id] = finalVal;
                                 });
+                                _autoBalanceSources(source.id);
                               },
                             ),
                           ),
