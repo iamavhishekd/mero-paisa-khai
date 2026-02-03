@@ -1,0 +1,67 @@
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  trailing_commas: preserve
+
+linter:
+  rules:
+    # === Imports & structure ===
+    - avoid_relative_lib_imports
+    - always_use_package_imports
+
+    # === Immutability & correctness ===
+    - prefer_const_constructors
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_locals
+    - avoid_redundant_argument_values
+    - cancel_subscriptions
+
+    # === Type safety boosters ===
+    - always_declare_return_types
+    - type_annotate_public_apis
+    - avoid_dynamic_calls
+    - avoid_types_on_closure_parameters
+    - strict_top_level_inference
+    - collection_methods_unrelated_type
+
+    # === Null & async safety ===
+    - avoid_null_checks_in_equality_operators
+    - discarded_futures
+    - unawaited_futures
+    - require_trailing_commas
+
+analyzer:
+  errors:
+    # Turn type-related lints into hard errors
+    avoid_relative_lib_imports: error
+    always_use_package_imports: error
+    cancel_subscriptions: error
+    prefer_const_constructors: error
+    prefer_const_literals_to_create_immutables: error
+    avoid_redundant_argument_values: error
+    prefer_final_locals: error
+
+    # Type safety = no warnings allowed
+    unnecessary_cast: error
+    unnecessary_type_check: error
+
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
+
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  plugins:
+    - custom_lint
+
+# Project-wide import bans
+forbidden_imports:
+  - "package:http/http.dart"
+  - "dart:io"
