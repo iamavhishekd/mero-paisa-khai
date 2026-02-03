@@ -75,4 +75,5 @@ Map<String, dynamic> _$CategoryToJson(_Category instance) => <String, dynamic>{
 const _$TransactionTypeEnumMap = {
   TransactionType.income: 'income',
   TransactionType.expense: 'expense',
+  TransactionType.both: 'both',
 };

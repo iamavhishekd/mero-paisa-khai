@@ -1,8 +1,16 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/category.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -23,18 +31,35 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String? _description;
   String? _relatedPerson;
   DateTime _selectedDate = DateTime.now();
+  bool _isUrgent = false;
+  String? _receiptPath;
 
   List<Category> _availableCategories = [];
+  List<Source> _availableSources = [];
+  final Map<String, double> _sourceSplits = {};
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    _loadSources();
+  }
+
+  void _loadSources() {
+    _availableSources = HiveService.sourcesBoxInstance.values.toList();
+    if (_availableSources.isNotEmpty) {
+      // By default, assign the full amount to the first source if no splits exist
+      // But we don't know the amount yet. We'll handle this in the UI.
+    }
   }
 
   void _loadCategories() {
     _availableCategories = HiveService.categoriesBoxInstance.values
-        .where((category) => category.type == _selectedType)
+        .where(
+          (category) =>
+              category.type == _selectedType ||
+              category.type == TransactionType.both,
+        )
         .toList();
 
     if (_availableCategories.isNotEmpty) {
@@ -75,6 +100,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (_formKey.currentState!.validate() && _selectedCategory != null) {
       _formKey.currentState!.save();
 
+      // Validate source splits
+      final totalSplits = _sourceSplits.values.fold(
+        0.0,
+        (sum, amount) => sum + amount,
+      );
+      if ((totalSplits - _amount).abs() > 0.01) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Total source amounts (\$${totalSplits.toStringAsFixed(2)}) must equal transaction amount (\$${_amount.toStringAsFixed(2)})',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final splits = _sourceSplits.entries
+          .where((e) => e.value > 0)
+          .map(
+            (e) => TransactionSourceSplit(sourceId: e.key, amount: e.value),
+          )
+          .toList();
+
       final transaction = Transaction(
         id: _uuid.v4(),
         title: _title,
@@ -84,6 +133,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         category: _selectedCategory!.name,
         description: _description,
         relatedPerson: _relatedPerson,
+        sources: splits,
+        isUrgent: _isUrgent,
+        receiptPath: _receiptPath,
       );
 
       await HiveService.transactionsBoxInstance.put(
@@ -98,251 +150,816 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Record'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTypeSelector(),
-              const SizedBox(height: 32),
-              _buildSectionHeader('Transaction Details'),
-              const SizedBox(height: 16),
-              TextFormField(
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Entry Title',
-                  hintText: 'e.g., Grocery Shopping',
-                  prefixIcon: Icon(Icons.title_outlined),
-                ),
-                validator: (value) => (value == null || value.isEmpty)
-                    ? 'Please enter a title'
-                    : null,
-                onSaved: (value) => _title = value!,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  hintText: '0.00',
-                  prefixIcon: Icon(Icons.attach_money_outlined),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty)
-                    return 'Please enter an amount';
-                  final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0)
-                    return 'Please enter a valid amount';
-                  return null;
-                },
-                onSaved: (value) => _amount = double.parse(value!),
-              ),
-              const SizedBox(height: 16),
-              _buildCategorySelector(),
-              const SizedBox(height: 16),
-              _buildDatePicker(),
-              const SizedBox(height: 32),
-              _buildSectionHeader('Additional Information'),
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Who is involved?',
-                  hintText: 'e.g., John Doe',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                onSaved: (value) => _relatedPerson = value,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  hintText: 'Add a description...',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
-                maxLines: 3,
-                onSaved: (value) => _description = value,
-              ),
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveTransaction,
-                  child: const Text('SUBMIT TRANSACTION'),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title.toUpperCase(),
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-      ),
-    );
-  }
-
-  Widget _buildTypeSelector() {
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          _buildTypeButton(
-            TransactionType.expense,
-            'EXPENSE',
-            Icons.arrow_outward,
-          ),
-          _buildTypeButton(
-            TransactionType.income,
-            'INCOME',
-            Icons.arrow_downward,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeButton(TransactionType type, String label, IconData icon) {
-    final isSelected = _selectedType == type;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedType = type;
-            _loadCategories();
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? Colors.white : Colors.black)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: (isDark ? Colors.white : Colors.black).withOpacity(
-                        0.1,
-                      ),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? (isDark ? Colors.black : Colors.white)
-                    : theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  letterSpacing: 0.5,
-                  color: isSelected
-                      ? (isDark ? Colors.black : Colors.white)
-                      : theme.colorScheme.onSurface.withOpacity(0.4),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    if (_availableCategories.isEmpty) return const SizedBox.shrink();
-
-    return DropdownButtonFormField<Category>(
-      initialValue: _selectedCategory,
-      decoration: const InputDecoration(
-        labelText: 'Category Tag',
-        prefixIcon: Icon(Icons.tag_outlined),
-      ),
-      items: _availableCategories
-          .map(
-            (category) => DropdownMenuItem<Category>(
-              value: category,
-              child: Row(
-                children: [
-                  Text(category.icon, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 12),
-                  Text(
-                    category.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32.0),
+                child: Form(
+                  key: _formKey,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 800;
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: isWide ? 6 : 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildIdentificationSection(),
+                                const SizedBox(height: 32),
+                                _buildPreferencesSection(),
+                                const SizedBox(height: 32),
+                                _buildSourcesSection(),
+                                if (!isWide) ...[
+                                  const SizedBox(height: 32),
+                                  _buildAmountAndDateSection(),
+                                ],
+                              ],
+                            ),
+                          ),
+                          if (isWide) ...[
+                            const SizedBox(width: 32),
+                            Expanded(
+                              flex: 4,
+                              child: _buildAmountAndDateSection(),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
-                ],
+                ),
               ),
             ),
-          )
-          .toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCategory = value;
-        });
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 600;
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isNarrow ? 20 : 32,
+            vertical: 24,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'COLLECTIVE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'NEW TRANSACTION',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: isNarrow ? 20 : 28,
+                        letterSpacing: -0.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _saveTransaction,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('CREATE'),
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.05,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  Widget _buildDatePicker() {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      borderRadius: BorderRadius.circular(16),
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Date of Activity',
-          prefixIcon: Icon(Icons.calendar_today_outlined),
+  Widget _buildIdentificationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('IDENTIFICATION'),
+        const SizedBox(height: 16),
+        _buildContentCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'TRANSACTION TYPE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildTypeIconSelector(),
+              const SizedBox(height: 32),
+              _buildCustomTextField(
+                label: 'TRANSACTION TITLE',
+                hint: 'e.g., Grocery Shopping',
+                icon: Icons.edit_outlined,
+                onSaved: (v) => _title = v!,
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 24),
+              _buildCustomTextField(
+                label: 'DESCRIPTION (OPTIONAL)',
+                hint: 'Add some details...',
+                icon: Icons.notes_outlined,
+                onSaved: (v) => _description = v,
+              ),
+            ],
+          ),
         ),
-        child: Text(
-          DateFormat('EEEE, d MMMM yyyy').format(_selectedDate),
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+      ],
+    );
+  }
+
+  Widget _buildPreferencesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('PREFERENCES'),
+        const SizedBox(height: 16),
+        _buildContentCard(
+          child: Column(
+            children: [
+              _buildSwitchItem(
+                label: 'MARK AS URGENT',
+                icon: Icons.warning_amber_rounded,
+                value: _isUrgent,
+                onChanged: (v) => setState(() => _isUrgent = v),
+              ),
+              const Divider(height: 32),
+              _buildSwitchItem(
+                label: 'ATTACH RECEIPT SCAN',
+                icon: Icons.document_scanner_outlined,
+                value: _receiptPath != null,
+                onChanged: _handleReceiptToggle,
+              ),
+              if (_receiptPath != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.image_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _receiptPath!.split('/').last,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () => setState(() => _receiptPath = null),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleReceiptToggle(bool value) async {
+    if (value) {
+      // Desktop: Skip bottom sheet and pick file directly
+      if (!kIsWeb &&
+          (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+        await _pickFile();
+        return;
+      }
+
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle('ATTACH RECEIPT'),
+                const SizedBox(height: 24),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: const Text(
+                    'Scan with Camera',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickImage(ImageSource.camera);
+                  },
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  title: const Text(
+                    'Pick from Gallery',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      setState(() {
+        _receiptPath = null;
+      });
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
+      if (!mounted) return;
+      if (result != null && result.files.single.path != null) {
+        final savedPath = await _saveFileLocally(result.files.single.path!);
+        if (savedPath != null && mounted) {
+          setState(() {
+            _receiptPath = savedPath;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking file: $e');
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: source);
+      if (!mounted) return;
+      if (image != null) {
+        final savedPath = await _saveFileLocally(image.path);
+        if (savedPath != null && mounted) {
+          setState(() {
+            _receiptPath = savedPath;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+    }
+  }
+
+  Future<String?> _saveFileLocally(String sourcePath) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final receiptsDir = Directory(path.join(directory.path, 'receipts'));
+      if (!await receiptsDir.exists()) {
+        await receiptsDir.create(recursive: true);
+      }
+
+      final fileName = path.basename(sourcePath);
+      final uniqueName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final destinationPath = path.join(receiptsDir.path, uniqueName);
+
+      await File(sourcePath).copy(destinationPath);
+      return destinationPath;
+    } catch (e) {
+      debugPrint('Error saving file locally: $e');
+      return null;
+    }
+  }
+
+  Widget _buildAmountAndDateSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('TRANSATION DATA'),
+        const SizedBox(height: 16),
+        _buildContentCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCustomTextField(
+                label: 'AMOUNT',
+                hint: '0.00',
+                icon: Icons.attach_money_rounded,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onSaved: (v) => _amount = double.tryParse(v ?? '') ?? 0,
+                onChanged: (v) {
+                  setState(() {
+                    _amount = double.tryParse(v) ?? 0;
+                  });
+                },
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  if (double.tryParse(v) == null) return 'Invalid';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              _buildCategorySelector(),
+              const SizedBox(height: 24),
+              const Text(
+                'DATE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () => _selectDate(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        DateFormat('MMM d, yyyy').format(_selectedDate),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildCustomTextField(
+                label: 'RELATED PERSON',
+                hint: 'e.g., John Doe',
+                icon: Icons.person_outline_rounded,
+                onSaved: (v) => _relatedPerson = v,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.5,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+      ),
+    );
+  }
+
+  Widget _buildContentCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.05),
         ),
       ),
+      child: child,
+    );
+  }
+
+  Widget _buildTypeIconSelector() {
+    return Row(
+      children: [
+        _buildTypeIconItem(
+          TransactionType.expense,
+          Icons.upload_rounded,
+          'EXPENSE',
+        ),
+        const SizedBox(width: 16),
+        _buildTypeIconItem(
+          TransactionType.income,
+          Icons.download_rounded,
+          'INCOME',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeIconItem(TransactionType type, IconData icon, String label) {
+    final isSelected = _selectedType == type;
+    final theme = Theme.of(context);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() {
+          _selectedType = type;
+          _loadCategories();
+        }),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: isSelected
+                      ? theme.colorScheme.surface
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomTextField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    FormFieldSetter<String>? onSaved,
+    FormFieldValidator<String>? validator,
+    ValueChanged<String>? onChanged,
+  }) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          style: const TextStyle(fontWeight: FontWeight.w700),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(
+              icon,
+              size: 18,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            filled: true,
+            fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          keyboardType: keyboardType,
+          onSaved: onSaved,
+          validator: validator,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitchItem({
+    required String label,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Switch.adaptive(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'CATEGORY TAG',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<Category>(
+          initialValue: _selectedCategory,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.tag_rounded, size: 18),
+            filled: true,
+            fillColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          items: _availableCategories
+              .map(
+                (c) => DropdownMenuItem(
+                  value: c,
+                  child: Row(
+                    children: [
+                      Text(c.icon),
+                      const SizedBox(width: 8),
+                      Text(
+                        c.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (v) => setState(() => _selectedCategory = v),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSourcesSection() {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('FUNDING SOURCES'),
+        const SizedBox(height: 16),
+        _buildContentCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_availableSources.isEmpty)
+                const Text(
+                  'No sources available. Please add one in Sources screen.',
+                )
+              else
+                ..._availableSources.map((source) {
+                  final isSelected = _sourceSplits.containsKey(source.id);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      children: [
+                        CheckboxListTile(
+                          title: Row(
+                            children: [
+                              Text(source.icon),
+                              const SizedBox(width: 12),
+                              Text(
+                                source.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          value: isSelected,
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                final currentTotal = _sourceSplits.values.fold(
+                                  0.0,
+                                  (s, a) => s + a,
+                                );
+                                final remaining = _amount - currentTotal;
+                                _sourceSplits[source.id] = remaining > 0
+                                    ? remaining
+                                    : 0.0;
+                              } else {
+                                _sourceSplits.remove(source.id);
+                              }
+                            });
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          checkboxShape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        if (isSelected)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 48),
+                            child: TextFormField(
+                              initialValue: _sourceSplits[source.id]
+                                  ?.toStringAsFixed(2),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                prefixText: '\$ ',
+                                hintText: 'Amount',
+                                isDense: true,
+                                filled: true,
+                                fillColor: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (v) {
+                                setState(() {
+                                  _sourceSplits[source.id] =
+                                      double.tryParse(v) ?? 0.0;
+                                });
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'TOTAL ASSIGNED',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    '\$${_sourceSplits.values.fold(0.0, (s, a) => s + a).toStringAsFixed(2)} / \$${_amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color:
+                          (_sourceSplits.values.fold(0.0, (s, a) => s + a) -
+                                      _amount)
+                                  .abs() >
+                              0.01
+                          ? Colors.red
+                          : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,10 +1,12 @@
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:paisa_khai/models/category.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 
 class HiveService {
   static const String transactionsBox = 'transactions';
   static const String categoriesBox = 'categories';
+  static const String sourcesBox = 'sources';
   static const String settingsBox = 'settings';
 
   static Future<void> init() async {
@@ -14,14 +16,26 @@ class HiveService {
     Hive.registerAdapter(TransactionAdapter());
     Hive.registerAdapter(TransactionTypeAdapter());
     Hive.registerAdapter(CategoryAdapter());
+    Hive.registerAdapter(SourceAdapter());
+    Hive.registerAdapter(SourceTypeAdapter());
+    Hive.registerAdapter(TransactionSourceSplitAdapter());
 
     // Open boxes
     await Hive.openBox<Transaction>(transactionsBox);
     await Hive.openBox<Category>(categoriesBox);
+    await Hive.openBox<Source>(sourcesBox);
     await Hive.openBox<dynamic>(settingsBox);
 
-    // Initialize default categories if empty
-    await _initializeDefaultCategories();
+    // Initialize defaults if empty and not previously initialized
+    final settings = Hive.box<dynamic>(settingsBox);
+    final initialSetupDone =
+        settings.get('initial_setup_done', defaultValue: false) as bool;
+
+    if (!initialSetupDone) {
+      await _initializeDefaultCategories();
+      await _initializeDefaultSources();
+      await settings.put('initial_setup_done', true);
+    }
   }
 
   static Future<void> _initializeDefaultCategories() async {
@@ -89,11 +103,47 @@ class HiveService {
     }
   }
 
+  static Future<void> _initializeDefaultSources() async {
+    final box = Hive.box<Source>(sourcesBox);
+
+    if (box.isEmpty) {
+      final defaultSources = [
+        const Source(
+          id: 's1',
+          name: 'Main Bank',
+          type: SourceType.bank,
+          icon: '🏦',
+          color: '0xFF000000',
+        ),
+        const Source(
+          id: 's2',
+          name: 'Digital Wallet',
+          type: SourceType.wallet,
+          icon: '📱',
+          color: '0xFF000000',
+        ),
+        const Source(
+          id: 's3',
+          name: 'Physical Cash',
+          type: SourceType.cash,
+          icon: '💵',
+          color: '0xFF000000',
+        ),
+      ];
+
+      for (final Source source in defaultSources) {
+        await box.put(source.id, source);
+      }
+    }
+  }
+
   static Box<Transaction> get transactionsBoxInstance =>
       Hive.box<Transaction>(transactionsBox);
 
   static Box<Category> get categoriesBoxInstance =>
       Hive.box<Category>(categoriesBox);
+
+  static Box<Source> get sourcesBoxInstance => Hive.box<Source>(sourcesBox);
 
   static Box<dynamic> get settingsBoxInstance => Hive.box(settingsBox);
 }

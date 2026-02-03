@@ -67,9 +67,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           backgroundColor: Theme.of(context).colorScheme.onSurface,
           action: SnackBarAction(
             label: 'Open',
-            onPressed: () {
+            onPressed: () async {
               // Show file info dialog
-              _showFileInfoDialog(filePath);
+              await _showFileInfoDialog(filePath);
             },
           ),
         ),
@@ -216,8 +216,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
             label: 'View',
-            onPressed: () {
-              _showBackupInfoDialog(backupDir.path);
+            onPressed: () async {
+              await _showBackupInfoDialog(backupDir.path);
             },
           ),
         ),
@@ -235,8 +235,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     }
   }
 
-  void _showFileInfoDialog(String filePath) {
-    showDialog(
+  Future<void> _showFileInfoDialog(String filePath) async {
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Export Successful'),
@@ -271,8 +271,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     );
   }
 
-  void _showBackupInfoDialog(String backupPath) {
-    showDialog(
+  Future<void> _showBackupInfoDialog(String backupPath) async {
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Backup Created'),
@@ -401,15 +401,15 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import & Export'),
+        title: const Text('Export & Backups'),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              showDialog(
+            onPressed: () async {
+              await showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Help'),
+                  title: const Text('Data Management'),
                   content: const SingleChildScrollView(
                     child: Text(
                       'Export: Saves all transactions to a CSV file\n\n'
@@ -433,180 +433,230 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Data Stats Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+            _buildSectionHeader('Data Statistics'),
+            const SizedBox(height: 16),
+            _buildStatsCard(),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Operations'),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth > 500 ? 2 : 1;
+                return GridView.count(
+                  crossAxisCount: crossAxisCount,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: crossAxisCount == 2 ? 1.4 : 3,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
                   children: [
-                    const Text(
-                      '📊 Data Statistics',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    _buildActionCard(
+                      'Export to CSV',
+                      'Download data as an editable file',
+                      Icons.upload_outlined,
+                      _exportData,
+                      _isExporting,
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatItem(
-                          'Transactions',
-                          HiveService.transactionsBoxInstance.length.toString(),
-                          Icons.receipt_long,
-                          Theme.of(context).colorScheme.onSurface,
-                        ),
-                        _buildStatItem(
-                          'Categories',
-                          HiveService.categoriesBoxInstance.length.toString(),
-                          Icons.category,
-                          Theme.of(context).colorScheme.onSurface,
-                        ),
-                        _buildStatItem(
-                          'Data Size',
-                          '${(HiveService.transactionsBoxInstance.length * 0.1).toStringAsFixed(1)} KB',
-                          Icons.storage,
-                          Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ],
+                    _buildActionCard(
+                      'Import from CSV',
+                      'Restore data from an external file',
+                      Icons.download_outlined,
+                      _importData,
+                      _isImporting,
+                    ),
+                    _buildActionCard(
+                      'Create Backup',
+                      'Save a secure copy of everything',
+                      Icons.backup_outlined,
+                      _backupData,
+                      _isExporting,
+                    ),
+                    _buildActionCard(
+                      'Restore Backup',
+                      'Recover data from a secure copy',
+                      Icons.restore_outlined,
+                      _restoreFromBackup,
+                      false,
                     ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
-            const SizedBox(height: 20),
-
-            // Action Buttons Grid
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.5,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              children: [
-                _buildActionCard(
-                  'Export to CSV',
-                  Icons.upload_outlined,
-                  Theme.of(context).colorScheme.onSurface,
-                  _exportData,
-                  _isExporting,
-                ),
-                _buildActionCard(
-                  'Import from CSV',
-                  Icons.download_outlined,
-                  Theme.of(context).colorScheme.onSurface,
-                  _importData,
-                  _isImporting,
-                ),
-                _buildActionCard(
-                  'Create Backup',
-                  Icons.backup_outlined,
-                  Theme.of(context).colorScheme.onSurface,
-                  _backupData,
-                  _isExporting,
-                ),
-                _buildActionCard(
-                  'Restore Backup',
-                  Icons.restore_outlined,
-                  Theme.of(context).colorScheme.onSurface,
-                  _restoreFromBackup,
-                  false,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Recent Activity
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Recent Activity',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_exportPath != null)
-                      _buildActivityItem(
-                        'Last Export',
-                        _exportPath!,
-                        Icons.upload_outlined,
-                        Theme.of(context).colorScheme.onSurface,
-                      ),
-                    if (_lastBackupPath != null)
-                      _buildActivityItem(
-                        'Last Backup',
-                        _lastBackupPath!,
-                        Icons.backup_outlined,
-                        Theme.of(context).colorScheme.onSurface,
-                      ),
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    const SizedBox(height: 10),
-                    const Text(
-                      '💡 Tips:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '• Regular backups protect your data\n'
-                      '• CSV files can be opened in Excel/Sheets\n'
-                      '• Export before clearing app data\n'
-                      '• Keep backup files in a safe location',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Recent Activity'),
+            const SizedBox(height: 16),
+            _buildRecentActivityCard(),
+            const SizedBox(height: 100),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 2,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            'Records',
+            HiveService.transactionsBoxInstance.length.toString(),
+            Icons.receipt_long_outlined,
+          ),
+          _buildStatItem(
+            'Tags',
+            HiveService.categoriesBoxInstance.length.toString(),
+            Icons.category_outlined,
+          ),
+          _buildStatItem(
+            'Storage',
+            '${(HiveService.transactionsBoxInstance.length * 0.1).toStringAsFixed(1)} KB',
+            Icons.storage_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivityCard() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_exportPath == null && _lastBackupPath == null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No recent export or backup activity',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          if (_exportPath != null)
+            _buildActivityItem(
+              'Last Export',
+              _exportPath!,
+              Icons.upload_outlined,
+            ),
+          if (_lastBackupPath != null)
+            _buildActivityItem(
+              'Last Backup',
+              _lastBackupPath!,
+              Icons.backup_outlined,
+            ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      size: 16,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'TIPS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '• Regular backups protect your data from loss\n'
+                  '• CSV files can be edited in Excel or Google Sheets\n'
+                  '• Export your data before clearing app storage\n'
+                  '• Keep backup files in a separate, safe location',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.6,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 24),
+        Icon(
+          icon,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          size: 20,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
           ),
         ),
         Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
           ),
         ),
       ],
@@ -615,81 +665,130 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
 
   Widget _buildActionCard(
     String title,
+    String subtitle,
     IconData icon,
-    Color color,
     VoidCallback onPressed,
     bool isLoading,
   ) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: isLoading ? null : onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              isLoading
-                  ? SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: color,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.05,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    )
-                  : Icon(icon, color: color, size: 30),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isLoading ? Colors.grey : null,
+                      child: isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            )
+                          : Icon(
+                              icon,
+                              color: theme.colorScheme.onSurface,
+                              size: 20,
+                            ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.15,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActivityItem(
-    String title,
-    String path,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildActivityItem(String title, String path, IconData icon) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 16, color: color),
+            child: Icon(
+              icon,
+              size: 18,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   path.split('/').last,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

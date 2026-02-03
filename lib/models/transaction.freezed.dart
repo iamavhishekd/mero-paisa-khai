@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Transaction {
 
-@HiveField(0) String get id;@HiveField(1) String get title;@HiveField(2) double get amount;@HiveField(3) DateTime get date;@HiveField(4) TransactionType get type;@HiveField(5) String get category;@HiveField(6) String? get description;@HiveField(7) String? get relatedPerson;
+@HiveField(0) String get id;@HiveField(1) String get title;@HiveField(2) double get amount;@HiveField(3) DateTime get date;@HiveField(4) TransactionType get type;@HiveField(5) String get category;@HiveField(6) String? get description;@HiveField(7) String? get relatedPerson;@HiveField(8) List<TransactionSourceSplit>? get sources;@HiveField(9) bool? get isUrgent;@HiveField(10) String? get receiptPath;
 /// Create a copy of Transaction
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TransactionCopyWith<Transaction> get copyWith => _$TransactionCopyWithImpl<Tran
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Transaction&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.relatedPerson, relatedPerson) || other.relatedPerson == relatedPerson));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Transaction&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.relatedPerson, relatedPerson) || other.relatedPerson == relatedPerson)&&const DeepCollectionEquality().equals(other.sources, sources)&&(identical(other.isUrgent, isUrgent) || other.isUrgent == isUrgent)&&(identical(other.receiptPath, receiptPath) || other.receiptPath == receiptPath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,amount,date,type,category,description,relatedPerson);
+int get hashCode => Object.hash(runtimeType,id,title,amount,date,type,category,description,relatedPerson,const DeepCollectionEquality().hash(sources),isUrgent,receiptPath);
 
 @override
 String toString() {
-  return 'Transaction(id: $id, title: $title, amount: $amount, date: $date, type: $type, category: $category, description: $description, relatedPerson: $relatedPerson)';
+  return 'Transaction(id: $id, title: $title, amount: $amount, date: $date, type: $type, category: $category, description: $description, relatedPerson: $relatedPerson, sources: $sources, isUrgent: $isUrgent, receiptPath: $receiptPath)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TransactionCopyWith<$Res>  {
   factory $TransactionCopyWith(Transaction value, $Res Function(Transaction) _then) = _$TransactionCopyWithImpl;
 @useResult
 $Res call({
-@HiveField(0) String id,@HiveField(1) String title,@HiveField(2) double amount,@HiveField(3) DateTime date,@HiveField(4) TransactionType type,@HiveField(5) String category,@HiveField(6) String? description,@HiveField(7) String? relatedPerson
+@HiveField(0) String id,@HiveField(1) String title,@HiveField(2) double amount,@HiveField(3) DateTime date,@HiveField(4) TransactionType type,@HiveField(5) String category,@HiveField(6) String? description,@HiveField(7) String? relatedPerson,@HiveField(8) List<TransactionSourceSplit>? sources,@HiveField(9) bool? isUrgent,@HiveField(10) String? receiptPath
 });
 
 
@@ -65,7 +65,7 @@ class _$TransactionCopyWithImpl<$Res>
 
 /// Create a copy of Transaction
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? amount = null,Object? date = null,Object? type = null,Object? category = null,Object? description = freezed,Object? relatedPerson = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? amount = null,Object? date = null,Object? type = null,Object? category = null,Object? description = freezed,Object? relatedPerson = freezed,Object? sources = freezed,Object? isUrgent = freezed,Object? receiptPath = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -75,6 +75,9 @@ as DateTime,type: null == type ? _self.type : type // ignore: cast_nullable_to_n
 as TransactionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,relatedPerson: freezed == relatedPerson ? _self.relatedPerson : relatedPerson // ignore: cast_nullable_to_non_nullable
+as String?,sources: freezed == sources ? _self.sources : sources // ignore: cast_nullable_to_non_nullable
+as List<TransactionSourceSplit>?,isUrgent: freezed == isUrgent ? _self.isUrgent : isUrgent // ignore: cast_nullable_to_non_nullable
+as bool?,receiptPath: freezed == receiptPath ? _self.receiptPath : receiptPath // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -160,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson, @HiveField(8)  List<TransactionSourceSplit>? sources, @HiveField(9)  bool? isUrgent, @HiveField(10)  String? receiptPath)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Transaction() when $default != null:
-return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson);case _:
+return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson,_that.sources,_that.isUrgent,_that.receiptPath);case _:
   return orElse();
 
 }
@@ -181,10 +184,10 @@ return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson, @HiveField(8)  List<TransactionSourceSplit>? sources, @HiveField(9)  bool? isUrgent, @HiveField(10)  String? receiptPath)  $default,) {final _that = this;
 switch (_that) {
 case _Transaction():
-return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson);case _:
+return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson,_that.sources,_that.isUrgent,_that.receiptPath);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +204,10 @@ return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@HiveField(0)  String id, @HiveField(1)  String title, @HiveField(2)  double amount, @HiveField(3)  DateTime date, @HiveField(4)  TransactionType type, @HiveField(5)  String category, @HiveField(6)  String? description, @HiveField(7)  String? relatedPerson, @HiveField(8)  List<TransactionSourceSplit>? sources, @HiveField(9)  bool? isUrgent, @HiveField(10)  String? receiptPath)?  $default,) {final _that = this;
 switch (_that) {
 case _Transaction() when $default != null:
-return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson);case _:
+return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.category,_that.description,_that.relatedPerson,_that.sources,_that.isUrgent,_that.receiptPath);case _:
   return null;
 
 }
@@ -216,7 +219,7 @@ return $default(_that.id,_that.title,_that.amount,_that.date,_that.type,_that.ca
 @JsonSerializable()
 
 class _Transaction implements Transaction {
-  const _Transaction({@HiveField(0) required this.id, @HiveField(1) required this.title, @HiveField(2) required this.amount, @HiveField(3) required this.date, @HiveField(4) required this.type, @HiveField(5) required this.category, @HiveField(6) this.description, @HiveField(7) this.relatedPerson});
+  const _Transaction({@HiveField(0) required this.id, @HiveField(1) required this.title, @HiveField(2) required this.amount, @HiveField(3) required this.date, @HiveField(4) required this.type, @HiveField(5) required this.category, @HiveField(6) this.description, @HiveField(7) this.relatedPerson, @HiveField(8) final  List<TransactionSourceSplit>? sources, @HiveField(9) this.isUrgent, @HiveField(10) this.receiptPath}): _sources = sources;
   factory _Transaction.fromJson(Map<String, dynamic> json) => _$TransactionFromJson(json);
 
 @override@HiveField(0) final  String id;
@@ -227,6 +230,17 @@ class _Transaction implements Transaction {
 @override@HiveField(5) final  String category;
 @override@HiveField(6) final  String? description;
 @override@HiveField(7) final  String? relatedPerson;
+ final  List<TransactionSourceSplit>? _sources;
+@override@HiveField(8) List<TransactionSourceSplit>? get sources {
+  final value = _sources;
+  if (value == null) return null;
+  if (_sources is EqualUnmodifiableListView) return _sources;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+@override@HiveField(9) final  bool? isUrgent;
+@override@HiveField(10) final  String? receiptPath;
 
 /// Create a copy of Transaction
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +255,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Transaction&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.relatedPerson, relatedPerson) || other.relatedPerson == relatedPerson));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Transaction&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.relatedPerson, relatedPerson) || other.relatedPerson == relatedPerson)&&const DeepCollectionEquality().equals(other._sources, _sources)&&(identical(other.isUrgent, isUrgent) || other.isUrgent == isUrgent)&&(identical(other.receiptPath, receiptPath) || other.receiptPath == receiptPath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,amount,date,type,category,description,relatedPerson);
+int get hashCode => Object.hash(runtimeType,id,title,amount,date,type,category,description,relatedPerson,const DeepCollectionEquality().hash(_sources),isUrgent,receiptPath);
 
 @override
 String toString() {
-  return 'Transaction(id: $id, title: $title, amount: $amount, date: $date, type: $type, category: $category, description: $description, relatedPerson: $relatedPerson)';
+  return 'Transaction(id: $id, title: $title, amount: $amount, date: $date, type: $type, category: $category, description: $description, relatedPerson: $relatedPerson, sources: $sources, isUrgent: $isUrgent, receiptPath: $receiptPath)';
 }
 
 
@@ -261,7 +275,7 @@ abstract mixin class _$TransactionCopyWith<$Res> implements $TransactionCopyWith
   factory _$TransactionCopyWith(_Transaction value, $Res Function(_Transaction) _then) = __$TransactionCopyWithImpl;
 @override @useResult
 $Res call({
-@HiveField(0) String id,@HiveField(1) String title,@HiveField(2) double amount,@HiveField(3) DateTime date,@HiveField(4) TransactionType type,@HiveField(5) String category,@HiveField(6) String? description,@HiveField(7) String? relatedPerson
+@HiveField(0) String id,@HiveField(1) String title,@HiveField(2) double amount,@HiveField(3) DateTime date,@HiveField(4) TransactionType type,@HiveField(5) String category,@HiveField(6) String? description,@HiveField(7) String? relatedPerson,@HiveField(8) List<TransactionSourceSplit>? sources,@HiveField(9) bool? isUrgent,@HiveField(10) String? receiptPath
 });
 
 
@@ -278,7 +292,7 @@ class __$TransactionCopyWithImpl<$Res>
 
 /// Create a copy of Transaction
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? amount = null,Object? date = null,Object? type = null,Object? category = null,Object? description = freezed,Object? relatedPerson = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? amount = null,Object? date = null,Object? type = null,Object? category = null,Object? description = freezed,Object? relatedPerson = freezed,Object? sources = freezed,Object? isUrgent = freezed,Object? receiptPath = freezed,}) {
   return _then(_Transaction(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -288,6 +302,9 @@ as DateTime,type: null == type ? _self.type : type // ignore: cast_nullable_to_n
 as TransactionType,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,relatedPerson: freezed == relatedPerson ? _self.relatedPerson : relatedPerson // ignore: cast_nullable_to_non_nullable
+as String?,sources: freezed == sources ? _self._sources : sources // ignore: cast_nullable_to_non_nullable
+as List<TransactionSourceSplit>?,isUrgent: freezed == isUrgent ? _self.isUrgent : isUrgent // ignore: cast_nullable_to_non_nullable
+as bool?,receiptPath: freezed == receiptPath ? _self.receiptPath : receiptPath // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

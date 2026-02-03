@@ -4,12 +4,16 @@
 
 import 'package:hive_ce/hive_ce.dart';
 import 'package:paisa_khai/models/category.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(CategoryAdapter());
+    registerAdapter(SourceAdapter());
+    registerAdapter(SourceTypeAdapter());
     registerAdapter(TransactionAdapter());
+    registerAdapter(TransactionSourceSplitAdapter());
     registerAdapter(TransactionTypeAdapter());
   }
 }
@@ -17,7 +21,10 @@ extension HiveRegistrar on HiveInterface {
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(CategoryAdapter());
+    registerAdapter(SourceAdapter());
+    registerAdapter(SourceTypeAdapter());
     registerAdapter(TransactionAdapter());
+    registerAdapter(TransactionSourceSplitAdapter());
     registerAdapter(TransactionTypeAdapter());
   }
 }

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:paisa_khai/models/source.dart';
 
 part 'transaction.freezed.dart';
 part 'transaction.g.dart';
@@ -16,6 +17,9 @@ abstract class Transaction with _$Transaction {
     @HiveField(5) required String category,
     @HiveField(6) String? description,
     @HiveField(7) String? relatedPerson,
+    @HiveField(8) List<TransactionSourceSplit>? sources,
+    @HiveField(9) bool? isUrgent,
+    @HiveField(10) String? receiptPath,
   }) = _Transaction;
 
   factory Transaction.fromJson(Map<String, dynamic> json) =>
@@ -28,4 +32,6 @@ enum TransactionType {
   income,
   @HiveField(1)
   expense,
+  @HiveField(2)
+  both,
 }

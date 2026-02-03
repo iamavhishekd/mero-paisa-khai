@@ -25,13 +25,16 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       category: fields[5] as String,
       description: fields[6] as String?,
       relatedPerson: fields[7] as String?,
+      sources: (fields[8] as List?)?.cast<TransactionSourceSplit>(),
+      isUrgent: fields[9] as bool?,
+      receiptPath: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Transaction obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +50,13 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       ..writeByte(6)
       ..write(obj.description)
       ..writeByte(7)
-      ..write(obj.relatedPerson);
+      ..write(obj.relatedPerson)
+      ..writeByte(8)
+      ..write(obj.sources)
+      ..writeByte(9)
+      ..write(obj.isUrgent)
+      ..writeByte(10)
+      ..write(obj.receiptPath);
   }
 
   @override
@@ -72,6 +81,8 @@ class TransactionTypeAdapter extends TypeAdapter<TransactionType> {
         return TransactionType.income;
       case 1:
         return TransactionType.expense;
+      case 2:
+        return TransactionType.both;
       default:
         return TransactionType.income;
     }
@@ -84,6 +95,8 @@ class TransactionTypeAdapter extends TypeAdapter<TransactionType> {
         writer.writeByte(0);
       case TransactionType.expense:
         writer.writeByte(1);
+      case TransactionType.both:
+        writer.writeByte(2);
     }
   }
 
@@ -111,6 +124,11 @@ _Transaction _$TransactionFromJson(Map<String, dynamic> json) => _Transaction(
   category: json['category'] as String,
   description: json['description'] as String?,
   relatedPerson: json['relatedPerson'] as String?,
+  sources: (json['sources'] as List<dynamic>?)
+      ?.map((e) => TransactionSourceSplit.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  isUrgent: json['isUrgent'] as bool?,
+  receiptPath: json['receiptPath'] as String?,
 );
 
 Map<String, dynamic> _$TransactionToJson(_Transaction instance) =>
@@ -123,9 +141,13 @@ Map<String, dynamic> _$TransactionToJson(_Transaction instance) =>
       'category': instance.category,
       'description': instance.description,
       'relatedPerson': instance.relatedPerson,
+      'sources': instance.sources?.map((e) => e.toJson()).toList(),
+      'isUrgent': instance.isUrgent,
+      'receiptPath': instance.receiptPath,
     };
 
 const _$TransactionTypeEnumMap = {
   TransactionType.income: 'income',
   TransactionType.expense: 'expense',
+  TransactionType.both: 'both',
 };
