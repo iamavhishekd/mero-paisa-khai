@@ -6,8 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
-import 'package:paisa_khai/screens/add_transaction_screen.dart';
-import 'package:paisa_khai/screens/transaction_detail_screen.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -175,17 +174,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 1000;
                   final isMedium = constraints.maxWidth > 700;
+                  final isNarrow = constraints.maxWidth < 600;
 
                   return SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMedium ? 32.0 : 20.0,
-                      vertical: 32,
+                      horizontal: isMedium ? 32.0 : (isNarrow ? 16.0 : 20.0),
+                      vertical: isNarrow ? 20 : 32,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildHeader(),
-                        const SizedBox(height: 28),
+                        SizedBox(height: isNarrow ? 16 : 28),
                         if (isWide)
                           _buildWideLayout()
                         else if (isMedium)
@@ -351,92 +351,113 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (hour >= 12 && hour < 17) greeting = 'Good Afternoon';
     if (hour >= 17) greeting = 'Good Evening';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  greeting.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: theme.colorScheme.primary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 600;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      greeting.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Dashboard',
+                    style: theme.textTheme.displayLarge?.copyWith(
+                      letterSpacing: -1,
+                      fontSize: isNarrow ? 28 : 36,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              Text(
-                'Dashboard',
-                style: theme.textTheme.displayLarge?.copyWith(
-                  letterSpacing: -1,
-                  fontSize: 36,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _buildAddButton(),
-      ],
+            ),
+            const SizedBox(width: 12),
+            _buildAddButton(),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildAddButton() {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: theme.brightness == Brightness.dark
-                ? Colors.black.withValues(alpha: 0.3)
-                : theme.colorScheme.primary.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: () async {
-          await Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const AddTransactionScreen(),
-            ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          shape: RoundedRectangleBorder(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isVeryNarrow = screenWidth < 450;
+
+        return Container(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: theme.brightness == Brightness.dark
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : theme.colorScheme.primary.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          elevation: 0,
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_rounded, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'ADD RECORD',
-              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          child: ElevatedButton(
+            onPressed: () {
+              if (UniversalPlatform.isWeb) {
+                context.go('/add');
+              } else {
+                context.push('/add');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: isVeryNarrow ? 16 : 20,
+                vertical: 16,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add_rounded, size: 20),
+                if (!isVeryNarrow) ...[
+                  const SizedBox(width: 8),
+                  const Text(
+                    'ADD RECORD',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -446,10 +467,11 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 450;
         final showExtra = constraints.maxWidth > 400;
 
         return Container(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isNarrow ? 20 : 28),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -549,17 +571,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     Text(
                       '\$${_balance.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 44,
+                        fontSize: isNarrow ? 32 : 44,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -2,
+                        letterSpacing: -1.5,
                         color: theme.colorScheme.onPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Across ${HiveService.sourcesBoxInstance.values.length} accounts',
                       style: TextStyle(
@@ -692,11 +714,12 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildQuickStatsCard() {
     final theme = Theme.of(context);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
     final now = DateTime.now();
     final monthName = DateFormat('MMMM').format(now);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isNarrow ? 18 : 24),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(24),
@@ -1423,12 +1446,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => TransactionDetailScreen(transaction: tx),
-            ),
-          );
+          if (UniversalPlatform.isWeb) {
+            context.go('/transaction/${tx.id}');
+          } else {
+            context.push('/transaction/${tx.id}');
+          }
         },
         borderRadius: BorderRadius.circular(14),
         child: Container(

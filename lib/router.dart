@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/models/transaction.dart';
+import 'package:paisa_khai/screens/add_transaction_screen.dart';
 import 'package:paisa_khai/screens/categories_screen.dart';
 import 'package:paisa_khai/screens/dashboard_screen.dart';
 import 'package:paisa_khai/screens/settings_screen.dart';
 import 'package:paisa_khai/screens/sources_screen.dart';
+import 'package:paisa_khai/screens/transaction_detail_screen.dart';
 import 'package:paisa_khai/screens/transaction_history_screen.dart';
 import 'package:paisa_khai/widgets/responsive_layout.dart';
 
@@ -59,6 +63,35 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/add',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final editId = state.uri.queryParameters['editId'];
+        Transaction? transactionToEdit;
+        if (editId != null) {
+          transactionToEdit = HiveService.transactionsBoxInstance.get(editId);
+        }
+        return AddTransactionScreen(transactionToEdit: transactionToEdit);
+      },
+    ),
+    GoRoute(
+      path: '/transaction/:id',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final id = state.pathParameters['id'];
+        final transaction = HiveService.transactionsBoxInstance.get(id);
+
+        if (transaction == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('Transaction not found')),
+          );
+        }
+
+        return TransactionDetailScreen(transaction: transaction);
+      },
     ),
   ],
 );

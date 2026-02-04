@@ -1,11 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
-import 'package:paisa_khai/screens/add_transaction_screen.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 class TransactionDetailScreen extends StatelessWidget {
   final Transaction transaction;
@@ -16,40 +17,6 @@ class TransactionDetailScreen extends StatelessWidget {
     required this.transaction,
     this.balanceAfter,
   });
-
-  static Future<void> show(
-    BuildContext context,
-    Transaction transaction, {
-    double? balanceAfter,
-  }) async {
-    final isWide = MediaQuery.of(context).size.width > 900;
-
-    if (isWide) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          backgroundColor: Colors.transparent,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: TransactionDetailScreen(
-              transaction: transaction,
-              balanceAfter: balanceAfter,
-            ),
-          ),
-        ),
-      );
-    } else {
-      await Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(
-          builder: (context) => TransactionDetailScreen(
-            transaction: transaction,
-            balanceAfter: balanceAfter,
-          ),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +31,13 @@ class TransactionDetailScreen extends StatelessWidget {
 
         if (currentTx == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) Navigator.pop(context);
+            if (context.mounted) {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            }
           });
           return const Scaffold(body: SizedBox.shrink());
         }
@@ -79,20 +52,23 @@ class TransactionDetailScreen extends StatelessWidget {
             title: const Text('DETAILS'),
             leading: IconButton(
               icon: const Icon(Icons.close_rounded),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/');
+                }
+              },
             ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (context) => AddTransactionScreen(
-                        transactionToEdit: currentTx,
-                      ),
-                    ),
-                  );
+                  if (UniversalPlatform.isWeb) {
+                    context.go('/add?editId=${currentTx.id}');
+                  } else {
+                    context.push('/add?editId=${currentTx.id}');
+                  }
                 },
               ),
               IconButton(
@@ -126,44 +102,62 @@ class TransactionDetailScreen extends StatelessWidget {
                     await HiveService.transactionsBoxInstance.delete(
                       currentTx.id,
                     );
-                    if (context.mounted) Navigator.pop(context);
+                    if (context.mounted) {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    }
                   }
                 },
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTypeHeader(theme, isIncome, currentTx),
-                const SizedBox(height: 32),
-                _buildMainInfo(theme, currentTx),
-                const SizedBox(height: 32),
-                _buildSectionTitle('METRICS'),
-                const SizedBox(height: 16),
-                _buildMetricsCard(theme, finalBalanceAfter, currentTx),
-                const SizedBox(height: 32),
-                _buildSectionTitle('FUNDING SOURCES'),
-                const SizedBox(height: 16),
-                _buildSourcesList(theme, currentTx),
-                if (currentTx.description != null &&
-                    currentTx.description!.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('DESCRIPTION'),
-                  const SizedBox(height: 16),
-                  _buildDescriptionCard(theme, currentTx),
-                ],
-                if (currentTx.receiptPath != null) ...[
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('RECEIPT SCAN'),
-                  const SizedBox(height: 16),
-                  _buildReceiptCard(theme, currentTx),
-                ],
-                const SizedBox(height: 48),
-              ],
-            ),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 600;
+              final hPadding = isNarrow ? 16.0 : 24.0;
+              final vPadding = isNarrow ? 20.0 : 24.0;
+              final spacing = isNarrow ? 24.0 : 32.0;
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: hPadding,
+                  vertical: vPadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTypeHeader(theme, isIncome, currentTx),
+                    SizedBox(height: spacing),
+                    _buildMainInfo(theme, currentTx),
+                    SizedBox(height: spacing),
+                    _buildSectionTitle('METRICS'),
+                    const SizedBox(height: 16),
+                    _buildMetricsCard(theme, finalBalanceAfter, currentTx),
+                    SizedBox(height: spacing),
+                    _buildSectionTitle('FUNDING SOURCES'),
+                    const SizedBox(height: 16),
+                    _buildSourcesList(theme, currentTx),
+                    if (currentTx.description != null &&
+                        currentTx.description!.isNotEmpty) ...[
+                      SizedBox(height: spacing),
+                      _buildSectionTitle('DESCRIPTION'),
+                      const SizedBox(height: 16),
+                      _buildDescriptionCard(theme, currentTx),
+                    ],
+                    if (currentTx.receiptPath != null) ...[
+                      SizedBox(height: spacing),
+                      _buildSectionTitle('RECEIPT SCAN'),
+                      const SizedBox(height: 16),
+                      _buildReceiptCard(theme, currentTx),
+                    ],
+                    SizedBox(height: spacing + 16),
+                  ],
+                ),
+              );
+            },
           ),
         );
       },

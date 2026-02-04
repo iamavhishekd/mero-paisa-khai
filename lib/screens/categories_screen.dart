@@ -37,38 +37,46 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return DefaultTabController(
       length: 2,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicator: BoxDecoration(
-                  color: theme.colorScheme.onSurface,
-                  borderRadius: BorderRadius.circular(12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 600;
+              final hPadding = isNarrow ? 16.0 : 24.0;
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPadding),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: TabBar(
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      color: theme.colorScheme.onSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelColor: theme.colorScheme.surface,
+                    unselectedLabelColor: theme.colorScheme.onSurface
+                        .withValues(
+                          alpha: 0.5,
+                        ),
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      letterSpacing: 1,
+                    ),
+                    tabs: const [
+                      Tab(text: 'EXPENSES'),
+                      Tab(text: 'INCOME'),
+                    ],
+                  ),
                 ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: theme.colorScheme.surface,
-                unselectedLabelColor: theme.colorScheme.onSurface.withValues(
-                  alpha: 0.5,
-                ),
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                  letterSpacing: 1,
-                ),
-                tabs: const [
-                  Tab(text: 'EXPENSES'),
-                  Tab(text: 'INCOME'),
-                ],
-              ),
-            ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -108,12 +116,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Widget _buildHeader() {
-    final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
+        final theme = Theme.of(context);
         final isNarrow = constraints.maxWidth < 600;
+        final hPadding = isNarrow ? 16.0 : 24.0;
+
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: EdgeInsets.symmetric(
+            horizontal: hPadding,
+            vertical: 24,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -163,21 +176,31 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ElevatedButton(
                 onPressed: () => _showAddCategoryDialog(context),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  elevation: 2,
+                  shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isNarrow ? 12 : 24,
-                    vertical: isNarrow ? 16 : 20,
+                    horizontal: isNarrow ? 16 : 28,
+                    vertical: isNarrow ? 14 : 18,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.add_rounded, size: 20),
-                    if (!isNarrow) ...[
+                    if (constraints.maxWidth > 400) ...[
                       const SizedBox(width: 8),
-                      const Text('NEW TAG'),
+                      const Text(
+                        'NEW TAG',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ],
                   ],
                 ),

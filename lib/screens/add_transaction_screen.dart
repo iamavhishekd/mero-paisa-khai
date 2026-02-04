@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
@@ -201,7 +201,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pop(context);
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
     }
   }
 
@@ -216,45 +220,52 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32.0),
-                child: Form(
-                  key: _formKey,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth > 800;
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: isWide ? 6 : 1,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildIdentificationSection(),
-                                const SizedBox(height: 32),
-                                _buildPreferencesSection(),
-                                const SizedBox(height: 32),
-                                _buildSourcesSection(),
-                                if (!isWide) ...[
-                                  const SizedBox(height: 32),
-                                  _buildAmountAndDateSection(),
-                                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 600;
+                  final hPadding = isNarrow ? 16.0 : 32.0;
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(hPadding, 0, hPadding, 100),
+                    child: Form(
+                      key: _formKey,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth > 800;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: isWide ? 6 : 1,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildIdentificationSection(),
+                                    SizedBox(height: isNarrow ? 20 : 32),
+                                    _buildPreferencesSection(),
+                                    SizedBox(height: isNarrow ? 20 : 32),
+                                    _buildSourcesSection(),
+                                    if (!isWide) ...[
+                                      SizedBox(height: isNarrow ? 20 : 32),
+                                      _buildAmountAndDateSection(),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              if (isWide) ...[
+                                const SizedBox(width: 32),
+                                Expanded(
+                                  flex: 4,
+                                  child: _buildAmountAndDateSection(),
+                                ),
                               ],
-                            ),
-                          ),
-                          if (isWide) ...[
-                            const SizedBox(width: 32),
-                            Expanded(
-                              flex: 4,
-                              child: _buildAmountAndDateSection(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -267,11 +278,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 600;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isNarrow = screenWidth < 600;
+        final isVeryNarrow = screenWidth < 400;
+
         return Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isNarrow ? 20 : 32,
-            vertical: 24,
+            horizontal: isNarrow ? 16 : 32,
+            vertical: isNarrow ? 16 : 24,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -313,7 +327,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           : 'New Transaction',
                       style: theme.textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: isNarrow ? 26 : 36,
+                        fontSize: isNarrow ? (isVeryNarrow ? 22 : 26) : 36,
                         letterSpacing: -1,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -332,28 +346,66 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             0.01
                     ? _saveTransaction
                     : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      disabledBackgroundColor: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.05),
+                      disabledForegroundColor: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.2),
+                      elevation: 0,
+                      shadowColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.4,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isVeryNarrow ? 20 : 32,
+                      ),
+                      minimumSize: const Size(0, 48), // Match X button height
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ).copyWith(
+                      elevation: WidgetStateProperty.resolveWith<double>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.disabled)) return 0;
+                        if (states.contains(WidgetState.hovered) ||
+                            states.contains(WidgetState.pressed)) {
+                          return 8;
+                        }
+                        return 2;
+                      }),
+                    ),
                 child: Text(
                   widget.transactionToEdit != null ? 'SAVE' : 'CREATE',
+                  style: TextStyle(
+                    fontSize: isVeryNarrow ? 12 : 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/');
+                  }
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.onSurface.withValues(
                     alpha: 0.05,
                   ),
-                  padding: const EdgeInsets.all(12),
+                  foregroundColor: theme.colorScheme.onSurface,
+                  minimumSize: const Size(48, 48),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ],
@@ -482,7 +534,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Future<void> _handleReceiptToggle(bool value) async {
     if (value) {
       // Desktop: Skip bottom sheet and pick file directly
-      if (!kIsWeb &&
+      if (!UniversalPlatform.isWeb &&
           (UniversalPlatform.isMacOS ||
               UniversalPlatform.isWindows ||
               UniversalPlatform.isLinux)) {
@@ -754,6 +806,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget _buildTypeIconItem(TransactionType type, IconData icon, String label) {
     final isSelected = _selectedType == type;
     final theme = Theme.of(context);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+
     return Expanded(
       child: GestureDetector(
         onTap: widget.transactionToEdit != null
@@ -764,7 +818,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: isNarrow ? 12 : 16),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.onSurface
@@ -784,15 +838,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               children: [
                 Icon(
                   icon,
+                  size: isNarrow ? 20 : 24,
                   color: isSelected
                       ? theme.colorScheme.surface
                       : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isNarrow ? 4 : 8),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: isNarrow ? 9 : 10,
                     fontWeight: FontWeight.w900,
                     color: isSelected
                         ? theme.colorScheme.surface

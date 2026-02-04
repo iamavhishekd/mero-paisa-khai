@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
-import 'package:paisa_khai/screens/add_transaction_screen.dart';
-import 'package:paisa_khai/screens/transaction_detail_screen.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -23,7 +23,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   final TextEditingController _searchController = TextEditingController();
-  bool _isFilterExpanded = true;
 
   @override
   void initState() {
@@ -115,6 +114,23 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             colorScheme: theme.colorScheme.copyWith(
               primary: theme.colorScheme.onSurface,
               onPrimary: theme.colorScheme.surface,
+              surface: theme.colorScheme.surface,
+              onSurface: theme.colorScheme.onSurface,
+              secondaryContainer: theme.colorScheme.onSurface.withValues(
+                alpha: 0.12,
+              ),
+              onSecondaryContainer: theme.colorScheme.onSurface,
+            ),
+            datePickerTheme: DatePickerThemeData(
+              headerBackgroundColor: theme.colorScheme.surface,
+              headerForegroundColor: theme.colorScheme.onSurface,
+              rangeSelectionBackgroundColor: theme.colorScheme.onSurface
+                  .withValues(alpha: 0.12),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected))
+                  return theme.colorScheme.surface;
+                return theme.colorScheme.onSurface;
+              }),
             ),
           ),
           child: child!,
@@ -146,6 +162,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  bool _isFilterExpanded = true;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -155,7 +173,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(),
             _buildSearchBar(),
@@ -195,6 +213,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
                 return Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildStatsBar(
                         filteredTransactions.length,
@@ -232,9 +251,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 600;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isNarrow = screenWidth < 600;
+        final hPadding = isNarrow ? 16.0 : 24.0;
+
         return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          padding: EdgeInsets.fromLTRB(hPadding, 24, hPadding, 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -305,13 +327,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         ],
       ),
       child: ElevatedButton(
-        onPressed: () async {
-          await Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const AddTransactionScreen(),
-            ),
-          );
+        onPressed: () {
+          if (UniversalPlatform.isWeb) {
+            context.go('/add');
+          } else {
+            context.push('/add');
+          }
         },
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.symmetric(
@@ -345,8 +366,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   Widget _buildSearchBar() {
     final theme = Theme.of(context);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final hPadding = isNarrow ? 16.0 : 24.0;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      padding: EdgeInsets.fromLTRB(hPadding, 0, hPadding, 12),
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
@@ -410,12 +434,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   Widget _buildFilterSection() {
     final theme = Theme.of(context);
     final sources = HiveService.sourcesBoxInstance.values.toList();
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final hPadding = isNarrow ? 16.0 : 24.0;
+    final isWide = MediaQuery.of(context).size.width > 800;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Filter toggle header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: hPadding),
           child: Row(
             children: [
               InkWell(
@@ -509,68 +537,124 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
         // Animated filter content
         AnimatedCrossFade(
+          alignment: Alignment.centerLeft,
           firstChild: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
-            child: Row(
-              children: [
-                // Type Filter
-                Expanded(
-                  child: _buildFilterDropdown<TransactionType?>(
-                    value: _selectedType,
-                    hint: 'All Types',
-                    icon: Icons.swap_vert_rounded,
-                    items: [
-                      const DropdownMenuItem(
-                        child: Text('All Types'),
-                      ),
-                      const DropdownMenuItem(
-                        value: TransactionType.income,
-                        child: Text('Income'),
-                      ),
-                      const DropdownMenuItem(
-                        value: TransactionType.expense,
-                        child: Text('Expense'),
-                      ),
-                    ],
-                    onChanged: (value) => setState(() => _selectedType = value),
-                    selectedColor: _selectedType != null
-                        ? (_selectedType == TransactionType.income
-                              ? const Color(0xFF10B981)
-                              : Colors.redAccent)
-                        : null,
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Source Filter
-                Expanded(
-                  child: _buildFilterDropdown<String?>(
-                    value: _selectedSourceId,
-                    hint: 'All Sources',
-                    icon: Icons.account_balance_wallet_outlined,
-                    items: [
-                      const DropdownMenuItem(
-                        child: Text('All Sources'),
-                      ),
-                      ...sources.map(
-                        (s) => DropdownMenuItem(
-                          value: s.id,
-                          child: Text(s.name),
+            padding: EdgeInsets.fromLTRB(hPadding, 12, hPadding, 12),
+            child: isWide
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: _buildFilterDropdown<TransactionType?>(
+                          value: _selectedType,
+                          hint: 'All Types',
+                          icon: Icons.swap_vert_rounded,
+                          items: [
+                            const DropdownMenuItem(child: Text('All Types')),
+                            const DropdownMenuItem(
+                              value: TransactionType.income,
+                              child: Text('Income'),
+                            ),
+                            const DropdownMenuItem(
+                              value: TransactionType.expense,
+                              child: Text('Expense'),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedType = value),
+                          selectedColor: _selectedType != null
+                              ? (_selectedType == TransactionType.income
+                                    ? const Color(0xFF10B981)
+                                    : Colors.redAccent)
+                              : null,
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildFilterDropdown<String?>(
+                          value: _selectedSourceId,
+                          hint: 'All Sources',
+                          icon: Icons.account_balance_wallet_outlined,
+                          items: [
+                            const DropdownMenuItem(child: Text('All Sources')),
+                            ...sources.map(
+                              (s) => DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.name),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedSourceId = value),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildDateRangeButton()),
                     ],
-                    onChanged: (value) =>
-                        setState(() => _selectedSourceId = value),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Type Filter
+                        SizedBox(
+                          width: 140,
+                          child: _buildFilterDropdown<TransactionType?>(
+                            value: _selectedType,
+                            hint: 'All Types',
+                            icon: Icons.swap_vert_rounded,
+                            items: [
+                              const DropdownMenuItem(child: Text('All Types')),
+                              const DropdownMenuItem(
+                                value: TransactionType.income,
+                                child: Text('Income'),
+                              ),
+                              const DropdownMenuItem(
+                                value: TransactionType.expense,
+                                child: Text('Expense'),
+                              ),
+                            ],
+                            onChanged: (value) =>
+                                setState(() => _selectedType = value),
+                            selectedColor: _selectedType != null
+                                ? (_selectedType == TransactionType.income
+                                      ? const Color(0xFF10B981)
+                                      : Colors.redAccent)
+                                : null,
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Source Filter
+                        SizedBox(
+                          width: 140,
+                          child: _buildFilterDropdown<String?>(
+                            value: _selectedSourceId,
+                            hint: 'All Sources',
+                            icon: Icons.account_balance_wallet_outlined,
+                            items: [
+                              const DropdownMenuItem(
+                                child: Text('All Sources'),
+                              ),
+                              ...sources.map(
+                                (s) => DropdownMenuItem(
+                                  value: s.id,
+                                  child: Text(s.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) =>
+                                setState(() => _selectedSourceId = value),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Date Range Filter
+                        SizedBox(width: 140, child: _buildDateRangeButton()),
+                      ],
+                    ),
                   ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Date Range Filter
-                Expanded(child: _buildDateRangeButton()),
-              ],
-            ),
           ),
           secondChild: const SizedBox(height: 8),
           crossFadeState: _isFilterExpanded
@@ -613,6 +697,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
+          isExpanded: true,
           hint: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -622,12 +707,15 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
               const SizedBox(width: 8),
-              Text(
-                hint,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              Flexible(
+                child: Text(
+                  hint,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -729,32 +817,79 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
   Widget _buildStatsBar(int count, double income, double expense) {
     final theme = Theme.of(context);
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final hPadding = isNarrow ? 16.0 : 24.0;
+    final isWide = MediaQuery.of(context).size.width > 800;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-      child: Row(
-        children: [
-          _buildStatChip(
-            '$count',
-            'records',
-            Icons.receipt_long_outlined,
-            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-          const SizedBox(width: 16),
-          _buildStatChip(
-            '+\$${income.toStringAsFixed(0)}',
-            'income',
-            Icons.trending_up_rounded,
-            const Color(0xFF10B981),
-          ),
-          const SizedBox(width: 16),
-          _buildStatChip(
-            '-\$${expense.toStringAsFixed(0)}',
-            'expense',
-            Icons.trending_down_rounded,
-            Colors.redAccent,
-          ),
-        ],
-      ),
+      padding: EdgeInsets.fromLTRB(hPadding, 8, hPadding, 16),
+      child: isWide
+          ? Row(
+              children: [
+                Expanded(
+                  child: _buildStatChip(
+                    '$count',
+                    'records',
+                    Icons.receipt_long_outlined,
+                    theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatChip(
+                    '+\$${income.toStringAsFixed(0)}',
+                    'income',
+                    Icons.trending_up_rounded,
+                    const Color(0xFF10B981),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatChip(
+                    '-\$${expense.toStringAsFixed(0)}',
+                    'expense',
+                    Icons.trending_down_rounded,
+                    Colors.redAccent,
+                  ),
+                ),
+              ],
+            )
+          : SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: _buildStatChip(
+                      '$count',
+                      'records',
+                      Icons.receipt_long_outlined,
+                      theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 120,
+                    child: _buildStatChip(
+                      '+\$${income.toStringAsFixed(0)}',
+                      'income',
+                      Icons.trending_up_rounded,
+                      const Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 120,
+                    child: _buildStatChip(
+                      '-\$${expense.toStringAsFixed(0)}',
+                      'expense',
+                      Icons.trending_down_rounded,
+                      Colors.redAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -765,45 +900,43 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     Color color,
   ) {
     final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: color,
-                      letterSpacing: -0.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                    letterSpacing: -0.5,
                   ),
-                  Text(
-                    label.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -890,9 +1023,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 800;
+        final isNarrow = constraints.maxWidth < 600;
+        final hPadding = isNarrow ? 16.0 : 24.0;
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
+          padding: EdgeInsets.fromLTRB(hPadding, 8, hPadding, 100),
           itemCount: sortedKeys.length,
           itemBuilder: (context, index) {
             final dateKey = sortedKeys[index];
@@ -993,11 +1128,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => TransactionDetailScreen.show(
-          context,
-          transaction,
-          balanceAfter: balanceAfter,
-        ),
+        onTap: () {
+          if (UniversalPlatform.isWeb) {
+            context.go('/transaction/${transaction.id}');
+          } else {
+            context.push('/transaction/${transaction.id}');
+          }
+        },
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(16),

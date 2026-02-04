@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -29,13 +30,29 @@ class CSVService {
         'Category',
         'Description',
         'Related Person',
+        'Sources',
       ]);
 
       // Sort by date
       transactions.sort((a, b) => b.date.compareTo(a.date));
 
+      // Get all sources for name lookup
+      final sourcesMap = {
+        for (var s in HiveService.sourcesBoxInstance.values) s.id: s.name,
+      };
+
       // Add transaction data
       for (final transaction in transactions) {
+        // Serialize sources: "Source1:Amount1;Source2:Amount2"
+        final sourcesStr =
+            transaction.sources
+                ?.map((s) {
+                  final name = sourcesMap[s.sourceId] ?? 'Unknown Source';
+                  return '$name:${s.amount.toStringAsFixed(2)}';
+                })
+                .join(';') ??
+            '';
+
         csvData.add([
           transaction.id,
           transaction.title,
@@ -45,6 +62,7 @@ class CSVService {
           transaction.category,
           transaction.description ?? '',
           transaction.relatedPerson ?? '',
+          sourcesStr,
         ]);
       }
 
@@ -72,7 +90,7 @@ class CSVService {
 
       final headers = csvTable[0];
 
-      // Validate headers
+      // Validate headers - we check for the first 8 mandatory ones
       final expectedHeaders = [
         'ID',
         'Title',
@@ -91,7 +109,11 @@ class CSVService {
         }
       }
 
+      // Check if "Sources" column exists (it's at index 8)
+      final hasSourcesColumn = headers.length > 8 && headers[8] == 'Sources';
+
       int importedCount = 0;
+      final existingSources = HiveService.sourcesBoxInstance.values.toList();
 
       // Skip header row
       for (int i = 1; i < csvTable.length; i++) {
@@ -123,13 +145,64 @@ class CSVService {
           TransactionType type;
           switch (typeStr) {
             case 'income':
-            case 'borrowing':
               type = TransactionType.income;
               break;
             case 'expense':
-            case 'lending':
             default:
               type = TransactionType.expense;
+          }
+
+          // Parse Sources split if available
+          List<TransactionSourceSplit>? splits;
+          if (hasSourcesColumn && row.length > 8) {
+            final sourcesStr = row[8].toString().trim();
+            if (sourcesStr.isNotEmpty) {
+              splits = [];
+              final parts = sourcesStr.split(';');
+              for (final part in parts) {
+                final kv = part.split(':');
+                if (kv.length == 2) {
+                  final sourceName = kv[0].trim();
+                  final splitAmount = double.tryParse(kv[1]) ?? 0.0;
+
+                  // Find or create source
+                  var source = existingSources.firstWhere(
+                    (s) => s.name.toLowerCase() == sourceName.toLowerCase(),
+                    orElse: () => const Source(
+                      id: '', // Will be updated
+                      name: '',
+                      type: SourceType.cash,
+                      icon: '💰',
+                      color: '0xFF94A3B8',
+                    ),
+                  );
+
+                  if (source.id.isEmpty) {
+                    // Create new source
+                    final newSource = Source(
+                      id: 's_${DateTime.now().millisecondsSinceEpoch}_$importedCount',
+                      name: sourceName,
+                      type: SourceType.cash,
+                      icon: '💰',
+                      color: '0xFF94A3B8',
+                    );
+                    await HiveService.sourcesBoxInstance.put(
+                      newSource.id,
+                      newSource,
+                    );
+                    existingSources.add(newSource);
+                    source = newSource;
+                  }
+
+                  splits.add(
+                    TransactionSourceSplit(
+                      sourceId: source.id,
+                      amount: splitAmount,
+                    ),
+                  );
+                }
+              }
+            }
           }
 
           // Generate new ID to avoid conflicts
@@ -148,6 +221,7 @@ class CSVService {
             relatedPerson: row[7].toString().trim().isNotEmpty
                 ? row[7].toString().trim()
                 : null,
+            sources: splits,
           );
 
           await HiveService.transactionsBoxInstance.put(

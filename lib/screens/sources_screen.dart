@@ -50,6 +50,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
         const SizedBox(height: 16),
@@ -79,8 +80,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
       builder: (context, constraints) {
         final theme = Theme.of(context);
         final isNarrow = constraints.maxWidth < 600;
+        final hPadding = isNarrow ? 16.0 : 24.0;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -97,8 +99,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.1,
+                            color: theme.colorScheme.primary.withOpacity(
+                              0.1,
                             ),
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -130,21 +132,31 @@ class _SourcesScreenState extends State<SourcesScreen> {
               ElevatedButton(
                 onPressed: () => _showAddSourceDialog(context),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  elevation: 2,
+                  shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isNarrow ? 12 : 24,
-                    vertical: isNarrow ? 16 : 20,
+                    horizontal: isNarrow ? 16 : 28,
+                    vertical: isNarrow ? 14 : 18,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.add_rounded, size: 20),
-                    if (!isNarrow) ...[
+                    if (constraints.maxWidth > 400) ...[
                       const SizedBox(width: 8),
-                      const Text('NEW SOURCE'),
+                      const Text(
+                        'NEW SOURCE',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -166,11 +178,15 @@ class _SourcesScreenState extends State<SourcesScreen> {
       );
     }
 
-    final isWide = MediaQuery.of(context).size.width > 800;
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+    final hPadding = isNarrow ? 16.0 : 24.0;
+    final isWide =
+        MediaQuery.of(context).size.width >
+        800; // Assuming this was intended to be used
 
     if (isWide) {
       return GridView.builder(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(hPadding),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 24,
@@ -186,7 +202,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(hPadding),
       itemCount: sources.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) => _buildSourceItem(

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   await HiveService.init();
   ThemeManager.init();
   runApp(const ExpenseTrackerApp());

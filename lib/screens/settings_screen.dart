@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -135,56 +134,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       _showErrorSnackbar('Import failed: $e');
     } finally {
       setState(() => _isImporting = false);
-    }
-  }
-
-  Future<void> _backupData() async {
-    try {
-      setState(() => _isExporting = true);
-
-      await _requestManageStoragePermission();
-
-      final transactions = HiveService.transactionsBoxInstance.values.toList();
-      final categories = HiveService.categoriesBoxInstance.values.toList();
-
-      if (transactions.isEmpty && categories.isEmpty) {
-        throw Exception('No data to backup');
-      }
-
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final backupDir = Directory(
-        '${directory.path}/expense_tracker_backup_$timestamp',
-      );
-      if (!await backupDir.exists()) {
-        await backupDir.create(recursive: true);
-      }
-
-      final transactionsCsv = await CSVService.exportToCSV();
-      final transactionsFile = File('${backupDir.path}/transactions.csv');
-      await transactionsFile.writeAsString(transactionsCsv);
-
-      final categoriesData = categories.map((c) => c.toJson()).toList();
-      final categoriesFile = File('${backupDir.path}/categories.json');
-      await categoriesFile.writeAsString(jsonEncode(categoriesData));
-
-      final metadata = {
-        'backup_date': DateTime.now().toIso8601String(),
-        'transaction_count': transactions.length,
-        'category_count': categories.length,
-        'app_version': '1.0.0',
-      };
-
-      final metadataFile = File('${backupDir.path}/metadata.json');
-      await metadataFile.writeAsString(jsonEncode(metadata));
-
-      if (!mounted) return;
-      _showSuccessSnackbar('Backup created successfully');
-    } catch (e) {
-      if (!mounted) return;
-      _showErrorSnackbar('Backup failed: $e');
-    } finally {
-      setState(() => _isExporting = false);
     }
   }
 
@@ -358,8 +307,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     const SizedBox(height: 16),
                     _buildActionCard(
-                      'Export to CSV',
-                      'Download all transactions as a spreadsheet',
+                      'Export Data (CSV)',
+                      'Download transactions and funding sources as a spreadsheet',
                       Icons.file_upload_outlined,
                       _exportData,
                       _isExporting,
@@ -367,21 +316,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     const SizedBox(height: 12),
                     _buildActionCard(
-                      'Import from CSV',
-                      'Restore data from an external backup',
+                      'Import Data (CSV)',
+                      'Restore transactions and sources from a CSV file',
                       Icons.file_download_outlined,
                       _importData,
                       _isImporting,
                       const Color(0xFF10B981),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionCard(
-                      'Full Backup',
-                      'Create a complete snapshot of all your data',
-                      Icons.cloud_upload_outlined,
-                      _backupData,
-                      _isExporting,
-                      const Color(0xFF3B82F6),
                     ),
                     const SizedBox(height: 40),
                     _buildSectionHeader(
@@ -411,44 +351,49 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 600;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'PREFERENCES',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: theme.colorScheme.primary,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'PREFERENCES',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Settings',
+                style: theme.textTheme.displayLarge?.copyWith(
+                  letterSpacing: -1,
+                  fontSize: isNarrow ? 28 : 36,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            'Settings',
-            style: theme.textTheme.displayLarge?.copyWith(
-              letterSpacing: -1,
-              fontSize: 36,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
