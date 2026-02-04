@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:paisa_khai/screens/add_transaction_screen.dart';
+import 'package:paisa_khai/screens/transaction_detail_screen.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -18,94 +19,116 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        _buildFilters(),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          child: Divider(height: 1),
-        ),
-        Expanded(
-          child: ValueListenableBuilder<Box<Transaction>>(
-            valueListenable: HiveService.transactionsBoxInstance.listenable(),
-            builder: (context, box, _) {
-              // Calculate running balances using all transactions sorted ascending
-              final allForBalance = box.values.toList()
-                ..sort((a, b) => a.date.compareTo(b.date));
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          _buildFilters(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+            child: Divider(height: 1),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<Box<Transaction>>(
+              valueListenable: HiveService.transactionsBoxInstance.listenable(),
+              builder: (context, box, _) {
+                // Calculate running balances using all transactions sorted ascending
+                final allForBalance = box.values.toList()
+                  ..sort((a, b) => a.date.compareTo(b.date));
 
-              List<Transaction> transactions = List.from(allForBalance);
+                List<Transaction> transactions = List.from(allForBalance);
 
-              final runningBalances = <String, double>{};
-              double currentBalance = HiveService.sourcesBoxInstance.values
-                  .fold(
-                    0.0,
-                    (sum, s) => sum + s.initialBalance,
-                  );
+                final runningBalances = <String, double>{};
+                double currentBalance = HiveService.sourcesBoxInstance.values
+                    .fold(
+                      0.0,
+                      (sum, s) => sum + s.initialBalance,
+                    );
 
-              for (final tx in allForBalance) {
-                if (tx.type == TransactionType.income) {
-                  currentBalance += tx.amount;
-                } else {
-                  currentBalance -= tx.amount;
+                for (final tx in allForBalance) {
+                  if (tx.type == TransactionType.income) {
+                    currentBalance += tx.amount;
+                  } else {
+                    currentBalance -= tx.amount;
+                  }
+                  runningBalances[tx.id] = currentBalance;
                 }
-                runningBalances[tx.id] = currentBalance;
-              }
 
-              if (_selectedFilter != null) {
-                transactions = transactions
-                    .where((t) => t.type == _selectedFilter)
-                    .toList();
-              }
+                if (_selectedFilter != null) {
+                  transactions = transactions
+                      .where((t) => t.type == _selectedFilter)
+                      .toList();
+                }
 
-              transactions.sort((a, b) => b.date.compareTo(a.date));
+                transactions.sort((a, b) => b.date.compareTo(a.date));
 
-              if (transactions.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.history_outlined,
-                        size: 64,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.1),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No records found',
-                        style: TextStyle(
+                if (transactions.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history_outlined,
+                          size: 64,
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.3),
-                          fontWeight: FontWeight.w600,
+                          ).colorScheme.onSurface.withValues(alpha: 0.1),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                        const SizedBox(height: 16),
+                        Text(
+                          'No records found',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = constraints.maxWidth > 800 ? 2 : 1;
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = constraints.maxWidth > 800 ? 2 : 1;
 
-                  if (crossAxisCount > 1) {
-                    return GridView.builder(
+                    if (crossAxisCount > 1) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0,
+                          vertical: 16.0,
+                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              mainAxisExtent: 130,
+                            ),
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = transactions[index];
+                          final balanceAfter =
+                              runningBalances[transaction.id] ?? 0.0;
+                          return _buildTransactionItem(
+                            transaction,
+                            balanceAfter,
+                          );
+                        },
+                      );
+                    }
+
+                    return ListView.separated(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24.0,
                         vertical: 16.0,
                       ),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            mainAxisExtent: 130,
-                          ),
                       itemCount: transactions.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final transaction = transactions[index];
                         final balanceAfter =
@@ -113,29 +136,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                         return _buildTransactionItem(transaction, balanceAfter);
                       },
                     );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 16.0,
-                    ),
-                    itemCount: transactions.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final transaction = transactions[index];
-                      final balanceAfter =
-                          runningBalances[transaction.id] ?? 0.0;
-                      return _buildTransactionItem(transaction, balanceAfter);
-                    },
-                  );
-                },
-              );
-            },
+                  },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -262,134 +269,148 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     final theme = Theme.of(context);
     final isIncome = transaction.type == TransactionType.income;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => TransactionDetailScreen.show(
+          context,
+          transaction,
+          balanceAfter: balanceAfter,
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              isIncome ? Icons.add_circle_outline : Icons.remove_circle_outline,
-              size: 20,
-              color: isIncome ? const Color(0xFF10B981) : Colors.redAccent,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
             ),
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  transaction.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      transaction.category,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat('MMM d, yyyy').format(transaction.date),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (transaction.relatedPerson != null &&
-                    transaction.relatedPerson!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 14,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        transaction.relatedPerson!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Text(
-                '${isIncome ? "+" : "-"}\$${transaction.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                  letterSpacing: -1,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  isIncome
+                      ? Icons.add_circle_outline
+                      : Icons.remove_circle_outline,
+                  size: 20,
                   color: isIncome ? const Color(0xFF10B981) : Colors.redAccent,
                 ),
               ),
-              Text(
-                'Balance: \$${balanceAfter.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      transaction.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          transaction.category,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.3,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(transaction.date),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (transaction.relatedPerson != null &&
+                        transaction.relatedPerson!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 14,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            transaction.relatedPerson!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${isIncome ? "+" : "-"}\$${transaction.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      letterSpacing: -1,
+                      color: isIncome
+                          ? const Color(0xFF10B981)
+                          : Colors.redAccent,
+                    ),
+                  ),
+                  Text(
+                    'Balance: \$${balanceAfter.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

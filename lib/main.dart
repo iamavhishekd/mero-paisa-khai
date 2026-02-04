@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
-import 'package:paisa_khai/widgets/responsive_layout.dart';
+import 'package:paisa_khai/router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,8 @@ class ExpenseTrackerApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeManager.themeMode,
       builder: (context, currentMode, _) {
-        return MaterialApp(
+        return MaterialApp.router(
+          routerConfig: appRouter,
           title: 'Paisa Khai',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
@@ -186,7 +187,6 @@ class ExpenseTrackerApp extends StatelessWidget {
               ),
             ),
           ),
-          home: const ResponsiveLayout(),
         );
       },
     );

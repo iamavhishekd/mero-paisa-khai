@@ -11,10 +11,13 @@ import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:universal_platform/universal_platform.dart';
 import 'package:uuid/uuid.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final Transaction? transactionToEdit;
+
+  const AddTransactionScreen({super.key, this.transactionToEdit});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -42,8 +45,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
     _loadSources();
+    if (widget.transactionToEdit != null) {
+      final tx = widget.transactionToEdit!;
+      _selectedType = tx.type;
+      _title = tx.title;
+      _amount = tx.amount;
+      _description = tx.description;
+      _relatedPerson = tx.relatedPerson;
+      _selectedDate = tx.date;
+      _isUrgent = tx.isUrgent ?? false;
+      _receiptPath = tx.receiptPath;
+
+      if (tx.sources != null) {
+        for (final split in tx.sources!) {
+          _sourceSplits[split.sourceId] = split.amount;
+          _sourceControllers[split.sourceId]?.text = split.amount
+              .toStringAsFixed(2);
+        }
+      }
+    }
+    _loadCategories();
   }
 
   void _loadSources() {
@@ -70,7 +92,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         )
         .toList();
 
-    if (_availableCategories.isNotEmpty) {
+    if (widget.transactionToEdit != null) {
+      _selectedCategory = _availableCategories.firstWhere(
+        (c) => c.name == widget.transactionToEdit!.category,
+        orElse: () => _availableCategories.isNotEmpty
+            ? _availableCategories.first
+            : Category(
+                id: 'dummy',
+                name: widget.transactionToEdit!.category,
+                type: widget.transactionToEdit!.type,
+                icon: '❓',
+                color: '0xFF808080',
+              ),
+      );
+    } else if (_availableCategories.isNotEmpty) {
       _selectedCategory = _availableCategories.first;
     } else {
       _selectedCategory = null;
@@ -147,7 +182,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           .toList();
 
       final transaction = Transaction(
-        id: _uuid.v4(),
+        id: widget.transactionToEdit?.id ?? _uuid.v4(),
         title: _title,
         amount: _amount,
         date: _selectedDate,
@@ -258,7 +293,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'NEW TRANSACTION',
+                      widget.transactionToEdit != null
+                          ? 'EDIT TRANSACTION'
+                          : 'NEW TRANSACTION',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         fontSize: isNarrow ? 20 : 28,
@@ -289,7 +326,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('CREATE'),
+                child: Text(
+                  widget.transactionToEdit != null ? 'SAVE' : 'CREATE',
+                ),
               ),
               const SizedBox(width: 16),
               IconButton(
@@ -333,6 +372,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               _buildCustomTextField(
                 label: 'TRANSACTION TITLE',
                 hint: 'e.g., Grocery Shopping',
+                initialValue: _title,
                 icon: Icons.edit_outlined,
                 onSaved: (v) => _title = v!,
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
@@ -341,6 +381,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               _buildCustomTextField(
                 label: 'DESCRIPTION (OPTIONAL)',
                 hint: 'Add some details...',
+                initialValue: _description,
                 icon: Icons.notes_outlined,
                 onSaved: (v) => _description = v,
               ),
@@ -427,7 +468,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (value) {
       // Desktop: Skip bottom sheet and pick file directly
       if (!kIsWeb &&
-          (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+          (UniversalPlatform.isMacOS ||
+              UniversalPlatform.isWindows ||
+              UniversalPlatform.isLinux)) {
         await _pickFile();
         return;
       }
@@ -571,6 +614,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               _buildCustomTextField(
                 label: 'AMOUNT',
                 hint: '0.00',
+                initialValue: _amount > 0 ? _amount.toStringAsFixed(2) : null,
                 icon: Icons.attach_money_rounded,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -635,6 +679,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               _buildCustomTextField(
                 label: 'RELATED PERSON',
                 hint: 'e.g., John Doe',
+                initialValue: _relatedPerson,
                 icon: Icons.person_outline_rounded,
                 onSaved: (v) => _relatedPerson = v,
               ),
@@ -696,10 +741,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final theme = Theme.of(context);
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() {
-          _selectedType = type;
-          _loadCategories();
-        }),
+        onTap: widget.transactionToEdit != null
+            ? null
+            : () => setState(() {
+                _selectedType = type;
+                _loadCategories();
+              }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -708,27 +755,37 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
+            border: widget.transactionToEdit != null && isSelected
+                ? Border.all(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                  )
+                : null,
           ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? theme.colorScheme.surface
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+          child: Opacity(
+            opacity: widget.transactionToEdit != null && !isSelected
+                ? 0.3
+                : 1.0,
+            child: Column(
+              children: [
+                Icon(
+                  icon,
                   color: isSelected
                       ? theme.colorScheme.surface
                       : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: isSelected
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -739,6 +796,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     required String label,
     required String hint,
     required IconData icon,
+    String? initialValue,
     TextInputType keyboardType = TextInputType.text,
     FormFieldSetter<String>? onSaved,
     FormFieldValidator<String>? validator,
@@ -758,6 +816,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
         const SizedBox(height: 12),
         TextFormField(
+          initialValue: initialValue,
           style: const TextStyle(fontWeight: FontWeight.w700),
           decoration: InputDecoration(
             hintText: hint,

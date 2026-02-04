@@ -147,6 +147,26 @@ class HiveService {
 
   static Box<dynamic> get settingsBoxInstance => Hive.box(settingsBox);
 
+  static double calculateBalanceAfter(String transactionId) {
+    final allTx = transactionsBoxInstance.values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    double currentBalance = sourcesBoxInstance.values.fold(
+      0.0,
+      (sum, s) => sum + s.initialBalance,
+    );
+
+    for (final tx in allTx) {
+      if (tx.type == TransactionType.income) {
+        currentBalance += tx.amount;
+      } else if (tx.type == TransactionType.expense) {
+        currentBalance -= tx.amount;
+      }
+      if (tx.id == transactionId) return currentBalance;
+    }
+    return currentBalance;
+  }
+
   static Future<void> clearAndReset() async {
     await transactionsBoxInstance.clear();
     await categoriesBoxInstance.clear();

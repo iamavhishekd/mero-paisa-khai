@@ -1,12 +1,13 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:paisa_khai/screens/add_transaction_screen.dart';
-import 'package:paisa_khai/screens/transaction_history_screen.dart';
+import 'package:paisa_khai/screens/transaction_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -801,98 +802,103 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       children: [
         ...transactionsToShow.map(
-          (transaction) => Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardTheme.color,
+          (transaction) => Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => TransactionDetailScreen.show(context, transaction),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.06),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color:
-                        (transaction.type == TransactionType.income
-                                ? const Color(0xFF10B981)
-                                : Colors.orange)
-                            .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    transaction.type == TransactionType.income
-                        ? Icons.south_west_rounded
-                        : Icons.north_east_rounded,
-                    size: 18,
-                    color: transaction.type == TransactionType.income
-                        ? const Color(0xFF10B981)
-                        : Colors.orange,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.06),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        transaction.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        transaction.category.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.3),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Row(
                   children: [
-                    Text(
-                      '${transaction.type == TransactionType.income ? "+" : "-"}\$${transaction.amount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 17,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color:
+                            (transaction.type == TransactionType.income
+                                    ? const Color(0xFF10B981)
+                                    : Colors.orange)
+                                .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        transaction.type == TransactionType.income
+                            ? Icons.south_west_rounded
+                            : Icons.north_east_rounded,
+                        size: 18,
                         color: transaction.type == TransactionType.income
                             ? const Color(0xFF10B981)
-                            : Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: -0.5,
+                            : Colors.orange,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat(
-                        'MMM d',
-                      ).format(transaction.date).toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.3),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            transaction.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            transaction.category.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${transaction.type == TransactionType.income ? "+" : "-"}\$${transaction.amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                            color: transaction.type == TransactionType.income
+                                ? const Color(0xFF10B981)
+                                : Theme.of(context).colorScheme.onSurface,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat(
+                            'MMM d',
+                          ).format(transaction.date).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -900,12 +906,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SizedBox(
           width: double.infinity,
           child: TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => const TransactionHistoryScreen(),
-              ),
-            ),
+            onPressed: () => context.go('/history'),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(

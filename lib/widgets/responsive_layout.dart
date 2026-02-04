@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:paisa_khai/screens/categories_screen.dart';
-import 'package:paisa_khai/screens/dashboard_screen.dart';
-import 'package:paisa_khai/screens/settings_screen.dart';
-import 'package:paisa_khai/screens/sources_screen.dart';
-import 'package:paisa_khai/screens/transaction_history_screen.dart';
+import 'package:go_router/go_router.dart';
 
-class ResponsiveLayout extends StatefulWidget {
-  const ResponsiveLayout({super.key});
+class ResponsiveLayout extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
 
-  @override
-  State<ResponsiveLayout> createState() => _ResponsiveLayoutState();
-}
-
-class _ResponsiveLayoutState extends State<ResponsiveLayout> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const CategoriesScreen(),
-    const SourcesScreen(),
-    const TransactionHistoryScreen(),
-    const SettingsScreen(),
-  ];
+  const ResponsiveLayout({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +14,10 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           return Scaffold(
             body: Row(
               children: [
-                _buildNavigationRail(),
+                _buildNavigationRail(context),
                 const VerticalDivider(thickness: 1, width: 1),
                 Expanded(
-                  child: _screens[_selectedIndex],
+                  child: navigationShell,
                 ),
               ],
             ),
@@ -42,14 +25,14 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
         }
 
         return Scaffold(
-          body: _screens[_selectedIndex],
-          bottomNavigationBar: _buildBottomNavigationBar(),
+          body: navigationShell,
+          bottomNavigationBar: _buildBottomNavigationBar(context),
         );
       },
     );
   }
 
-  Widget _buildNavigationRail() {
+  Widget _buildNavigationRail(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
@@ -72,6 +55,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           ),
           const SizedBox(height: 60),
           _buildSidebarItem(
+            context,
             index: 0,
             icon: Icons.grid_view_outlined,
             selectedIcon: Icons.grid_view_rounded,
@@ -79,6 +63,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           ),
           const SizedBox(height: 8),
           _buildSidebarItem(
+            context,
             index: 1,
             icon: Icons.local_offer_outlined,
             selectedIcon: Icons.local_offer_rounded,
@@ -86,6 +71,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           ),
           const SizedBox(height: 8),
           _buildSidebarItem(
+            context,
             index: 2,
             icon: Icons.account_balance_wallet_outlined,
             selectedIcon: Icons.account_balance_wallet_rounded,
@@ -93,6 +79,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           ),
           const SizedBox(height: 8),
           _buildSidebarItem(
+            context,
             index: 3,
             icon: Icons.update_outlined,
             selectedIcon: Icons.update_rounded,
@@ -100,6 +87,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           ),
           const SizedBox(height: 8),
           _buildSidebarItem(
+            context,
             index: 4,
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
@@ -110,18 +98,19 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     );
   }
 
-  Widget _buildSidebarItem({
+  Widget _buildSidebarItem(
+    BuildContext context, {
     required int index,
     required IconData icon,
     required IconData selectedIcon,
     required String label,
   }) {
-    final isSelected = _selectedIndex == index;
+    final isSelected = navigationShell.currentIndex == index;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () => navigationShell.goBranch(index),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -161,7 +150,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
+  Widget _buildBottomNavigationBar(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
@@ -176,7 +165,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
       child: BottomNavigationBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        currentIndex: _selectedIndex,
+        currentIndex: navigationShell.currentIndex,
         selectedItemColor: theme.colorScheme.onSurface,
         unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.2),
         type: BottomNavigationBarType.fixed,
@@ -190,11 +179,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
           fontSize: 10,
           letterSpacing: 0.5,
         ),
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onTap: (index) => navigationShell.goBranch(index),
         items: const [
           BottomNavigationBarItem(
             icon: Padding(
