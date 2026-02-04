@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -34,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       parent: _animationController,
       curve: Curves.easeOut,
     );
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   @override

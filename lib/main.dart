@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,7 +27,9 @@ class ThemeManager {
 
   static void setThemeMode(ThemeMode mode) {
     themeMode.value = mode;
-    HiveService.settingsBoxInstance.put('theme_mode_index', mode.index);
+    unawaited(
+      HiveService.settingsBoxInstance.put('theme_mode_index', mode.index),
+    );
   }
 }
 
@@ -43,132 +47,128 @@ class ExpenseTrackerApp extends StatelessWidget {
       builder: (context, currentMode, _) {
         return MaterialApp.router(
           routerConfig: appRouter,
-          title: 'Paisa Khai',
+          title: 'paisa khai',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
+          // Light Theme
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
-            scaffoldBackgroundColor: surfaceWhite,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.black,
-              primary: Colors.black,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+              seedColor: primaryBlack,
+              primary: primaryBlack,
+              secondary: accentGold,
+              surface: surfaceWhite,
             ),
-            textTheme: GoogleFonts.soraTextTheme(ThemeData.light().textTheme)
+            scaffoldBackgroundColor: surfaceWhite,
+            textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme)
                 .copyWith(
-                  displayLarge: GoogleFonts.sora(
-                    fontSize: 34,
+                  displayLarge: GoogleFonts.outfit(
+                    fontSize: 32,
                     fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                    letterSpacing: -1.5,
+                    color: primaryBlack,
                   ),
-                  titleLarge: GoogleFonts.sora(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
+                  bodyLarge: GoogleFonts.outfit(
+                    fontSize: 16,
+                    color: primaryBlack.withValues(alpha: 0.8),
                   ),
                 ),
-            appBarTheme: AppBarTheme(
+            appBarTheme: const AppBarTheme(
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: false,
-              titleTextStyle: GoogleFonts.sora(
-                color: Colors.black,
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
+              titleTextStyle: TextStyle(
+                color: primaryBlack,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
             cardTheme: CardThemeData(
               color: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
               ),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: primaryBlack,
                 foregroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 28,
+                  horizontal: 24,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: GoogleFonts.sora(fontWeight: FontWeight.w800),
+                textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700),
               ),
             ),
           ),
+          // Dark Theme
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: accentGold,
+              brightness: Brightness.dark,
+              primary: accentGold,
+              onPrimary: primaryBlack,
+              secondary: surfaceWhite,
+              surface: primaryBlack,
+              onSurface: Colors.white,
+              surfaceContainerLowest: const Color(0xFF16181D),
+            ),
             scaffoldBackgroundColor: primaryBlack,
-            textTheme: GoogleFonts.soraTextTheme(ThemeData.dark().textTheme)
+            textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
                 .copyWith(
-                  displayLarge: GoogleFonts.sora(
-                    fontSize: 34,
+                  displayLarge: GoogleFonts.outfit(
+                    fontSize: 32,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
-                    letterSpacing: -1.5,
                   ),
-                  titleLarge: GoogleFonts.sora(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
+                  bodyLarge: GoogleFonts.outfit(
+                    fontSize: 16,
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
-            colorScheme: const ColorScheme.dark(
-              primary: Colors.white,
-              secondary: accentGold,
-              surface: Color(0xFF16181D),
-              surfaceContainerHighest: Color(0xFF23262D),
-            ),
-            appBarTheme: AppBarTheme(
+            appBarTheme: const AppBarTheme(
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: false,
-              titleTextStyle: GoogleFonts.sora(
+              titleTextStyle: TextStyle(
                 color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
             cardTheme: CardThemeData(
-              color: const Color(0xFF16181D),
+              color: const Color(0xFF1C1F26),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
               ),
             ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+            floatingActionButtonTheme: const FloatingActionButtonThemeData(
+              backgroundColor: Color(0xFFE2C08D),
+              foregroundColor: Color(0xFF0C0D0F),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.all(Radius.circular(16)),
               ),
-              elevation: 4,
             ),
             bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: primaryBlack,
-              selectedItemColor: Colors.white,
-              unselectedItemColor: Color(0xFF4B535D),
+              backgroundColor: Color(0xFF16181D),
+              selectedItemColor: Color(0xFFE2C08D),
+              unselectedItemColor: Colors.white54,
               type: BottomNavigationBarType.fixed,
-              showSelectedLabels: true,
-              showUnselectedLabels: false,
+              elevation: 0,
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: const Color(0xFF16181D),
+              fillColor: const Color(0xFF1C1F26),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 16,
@@ -187,14 +187,12 @@ class ExpenseTrackerApp extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Colors.white, width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFFE2C08D),
+                  width: 2,
+                ),
               ),
-              labelStyle: GoogleFonts.sora(
-                color: Colors.white.withValues(alpha: 0.5),
-              ),
-              hintStyle: GoogleFonts.sora(
-                color: Colors.white.withValues(alpha: 0.3),
-              ),
+              hintStyle: GoogleFonts.outfit(color: Colors.white38),
             ),
           ),
         );

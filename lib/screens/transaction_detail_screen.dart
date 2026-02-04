@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -67,7 +68,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   if (UniversalPlatform.isWeb) {
                     context.go('/add?editId=${currentTx.id}');
                   } else {
-                    context.push('/add?editId=${currentTx.id}');
+                    unawaited(context.push('/add?editId=${currentTx.id}'));
                   }
                 },
               ),

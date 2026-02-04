@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -35,7 +37,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       parent: _animationController,
       curve: Curves.easeOut,
     );
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   @override
@@ -127,8 +129,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               rangeSelectionBackgroundColor: theme.colorScheme.onSurface
                   .withValues(alpha: 0.12),
               dayForegroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected))
+                if (states.contains(WidgetState.selected)) {
                   return theme.colorScheme.surface;
+                }
                 return theme.colorScheme.onSurface;
               }),
             ),
@@ -331,7 +334,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           if (UniversalPlatform.isWeb) {
             context.go('/add');
           } else {
-            context.push('/add');
+            unawaited(context.push('/add'));
           }
         },
         style: ElevatedButton.styleFrom(
@@ -1132,7 +1135,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           if (UniversalPlatform.isWeb) {
             context.go('/transaction/${transaction.id}');
           } else {
-            context.push('/transaction/${transaction.id}');
+            unawaited(context.push('/transaction/${transaction.id}'));
           }
         },
         borderRadius: BorderRadius.circular(20),

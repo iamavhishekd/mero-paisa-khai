@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       parent: _animationController,
       curve: Curves.easeOut,
     );
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   @override
@@ -426,7 +428,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               if (UniversalPlatform.isWeb) {
                 context.go('/add');
               } else {
-                context.push('/add');
+                unawaited(context.push('/add'));
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1449,7 +1451,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           if (UniversalPlatform.isWeb) {
             context.go('/transaction/${tx.id}');
           } else {
-            context.push('/transaction/${tx.id}');
+            unawaited(context.push('/transaction/${tx.id}'));
           }
         },
         borderRadius: BorderRadius.circular(14),
