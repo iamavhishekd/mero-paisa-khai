@@ -275,31 +275,46 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'COLLECTIVE',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.4,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'RECORDS',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(
                       widget.transactionToEdit != null
-                          ? 'EDIT TRANSACTION'
-                          : 'NEW TRANSACTION',
-                      style: theme.textTheme.titleLarge?.copyWith(
+                          ? 'Edit Transaction'
+                          : 'New Transaction',
+                      style: theme.textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: isNarrow ? 20 : 28,
-                        letterSpacing: -0.5,
+                        fontSize: isNarrow ? 26 : 36,
+                        letterSpacing: -1,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

@@ -55,8 +55,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: theme.colorScheme.surface,
-                unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 
-                  0.5,
+                unselectedLabelColor: theme.colorScheme.onSurface.withValues(
+                  alpha: 0.5,
                 ),
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w900,
@@ -116,23 +116,40 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'COLLECTION',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.5,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'COLLECTION',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(
-                      'CATEGORIES',
+                      'Categories',
                       style: theme.textTheme.displayLarge?.copyWith(
                         letterSpacing: -1,
                         fontSize: isNarrow ? 28 : 40,
@@ -181,13 +198,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             Icon(
               Icons.tag_outlined,
               size: 48,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
             ),
             const SizedBox(height: 16),
             Text(
               'No tags here',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.3),
               ),
             ),
           ],
@@ -240,7 +261,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.08),
         ),
       ),
       child: Row(
@@ -250,7 +273,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
             child: Text(
@@ -272,7 +297,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             icon: Icon(
               Icons.delete_outline,
               size: 20,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             onPressed: () => _deleteCategory(category.id),
           ),
@@ -371,8 +398,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 2,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 
-                                  0.4,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
                                 ),
                               ),
                             ),
@@ -437,7 +464,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -447,7 +476,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.05,
+                          ),
                         ),
                       ),
                       child: Column(
@@ -471,8 +502,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                 size: 18,
                               ),
                               filled: true,
-                              fillColor: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.05),
+                              fillColor: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.05,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
@@ -493,7 +525,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -503,7 +537,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.05,
+                          ),
                         ),
                       ),
                       child: Column(

@@ -6,6 +6,7 @@ import 'package:paisa_khai/router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HiveService.init();
+  ThemeManager.init();
   runApp(const ExpenseTrackerApp());
 }
 
@@ -14,8 +15,15 @@ class ThemeManager {
     ThemeMode.system,
   );
 
+  static void init() {
+    final box = HiveService.settingsBoxInstance;
+    final savedIndex = box.get('theme_mode_index', defaultValue: 0) as int;
+    themeMode.value = ThemeMode.values[savedIndex];
+  }
+
   static void setThemeMode(ThemeMode mode) {
     themeMode.value = mode;
+    HiveService.settingsBoxInstance.put('theme_mode_index', mode.index);
   }
 }
 

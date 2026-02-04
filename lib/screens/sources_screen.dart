@@ -83,25 +83,40 @@ class _SourcesScreenState extends State<SourcesScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'COLLECTION',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.5,
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.3,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'COLLECTION',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(
-                      'SOURCES',
+                      'Sources',
                       style: theme.textTheme.displayLarge?.copyWith(
                         letterSpacing: -1,
                         fontSize: isNarrow ? 28 : 40,
