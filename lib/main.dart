@@ -40,7 +40,6 @@ class ExpenseTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color primaryBlack = Color(0xFF0C0D0F);
     const Color surfaceWhite = Color(0xFFF8F9FA);
-    const Color accentGold = Color(0xFFE2C08D);
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeManager.themeMode,
@@ -57,7 +56,7 @@ class ExpenseTrackerApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(
               seedColor: primaryBlack,
               primary: primaryBlack,
-              secondary: accentGold,
+              secondary: surfaceWhite,
               surface: surfaceWhite,
             ),
             scaffoldBackgroundColor: surfaceWhite,
@@ -112,9 +111,9 @@ class ExpenseTrackerApp extends StatelessWidget {
             useMaterial3: true,
             brightness: Brightness.dark,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: accentGold,
+              seedColor: surfaceWhite,
               brightness: Brightness.dark,
-              primary: accentGold,
+              primary: surfaceWhite,
               onPrimary: primaryBlack,
               secondary: surfaceWhite,
               surface: primaryBlack,
