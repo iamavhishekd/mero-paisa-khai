@@ -4,7 +4,8 @@
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="MainExecutable" Guid="*">
         <File
-          Source="$(var.BuildDir)\*.exe"
+          Id="PaisaKhaiExe"
+          Source="$(var.BuildDir)\paisa_khai.exe"
           KeyPath="yes" />
       </Component>
     </DirectoryRef>
