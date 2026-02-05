@@ -8,18 +8,25 @@
     Manufacturer="Abhishek Dahal"
     UpgradeCode="22515399-078c-4ad7-a583-a3819ff76a26">
 
+    <!-- Package config -->
     <Package InstallerVersion="500"
              Compressed="yes"
              InstallScope="perMachine" />
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
-    <MediaTemplate />
+    <!-- Force CAB embedding -->
+    <MediaTemplate EmbedCab="yes" />
 
+    <!-- Upgrade handling -->
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version is already installed." />
+
+    <!-- App feature -->
     <Feature Id="ProductFeature" Title="Paisa Khai" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
   </Product>
 
+  <!-- Install directory -->
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
