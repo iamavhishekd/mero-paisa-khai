@@ -35,30 +35,33 @@ jobs:
       - name: Build Windows app
         run: flutter build windows --${{ github.event.inputs['build-type'] }}
 
-      # ✅ Install WiX
+      # Install WiX
       - name: Install WiX Toolset
         run: |
           choco install wixtoolset -y
           echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $env:GITHUB_PATH
 
-      # Harvest
+      # Harvest Flutter build files
       - name: Harvest Flutter build files
         run: |
-          heat dir build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
-            -cg ProductComponents `
-            -dr INSTALLFOLDER `
-            -gg `
-            -scom -sreg -sfrag -srd `
+          heat dir build/windows/x64/runner/${{ github.event.inputs['build-type'] }} ^
+            -cg ProductComponents ^
+            -dr INSTALLFOLDER ^
+            -gg ^
+            -var var.BuildDir ^
+            -scom -sreg -sfrag -srd ^
             -out windows/installer/components.wxs
 
-      # Build MSI
+      # Build MSI installer
       - name: Build MSI installer
         run: |
           mkdir installer_build
-          candle windows/installer/main.wxs windows/installer/components.wxs `
-            -dBuildDir=build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
+          candle windows/installer/main.wxs windows/installer/components.wxs ^
+            -dBuildDir=build/windows/x64/runner/${{ github.event.inputs['build-type'] }} ^
             -out installer_build/
           light installer_build/*.wixobj -out ${{ github.event.inputs['msi-name'] }}
+
+      # Upload MSI artifact
       - uses: actions/upload-artifact@v4
         with:
           name: windows-msi
