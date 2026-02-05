@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:universal_platform/universal_platform.dart';
 
@@ -23,143 +25,174 @@ class TransactionDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ValueListenableBuilder(
-      valueListenable: HiveService.transactionsBoxInstance.listenable(
-        keys: [transaction.id],
-      ),
-      builder: (context, box, child) {
-        final currentTx = box.get(transaction.id);
+    return BlocBuilder<TransactionBloc, TransactionState>(
+      builder: (context, txState) {
+        return BlocBuilder<SourceBloc, SourceState>(
+          builder: (context, sourceState) {
+            final currentTx = txState.transactions.firstWhere(
+              (t) => t.id == transaction.id,
+              orElse: () => transaction,
+            );
 
-        if (currentTx == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              if (context.canPop()) {
-                context.pop();
+            final exists = txState.transactions.any(
+              (t) => t.id == transaction.id,
+            );
+
+            if (!exists) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/');
+                  }
+                }
+              });
+              return const Scaffold(body: SizedBox.shrink());
+            }
+
+            final isIncome = currentTx.type == TransactionType.income;
+
+            // Calculate balance after from state
+            double calculatedBalanceAfter = 0;
+            final initialBalances = sourceState.sources.fold(
+              0.0,
+              (sum, s) => sum + s.initialBalance,
+            );
+
+            double runningBalance = initialBalances;
+            final allTxsAsc = List<Transaction>.from(txState.transactions)
+              ..sort((a, b) => a.date.compareTo(b.date));
+
+            for (final tx in allTxsAsc) {
+              if (tx.type == TransactionType.income) {
+                runningBalance += tx.amount;
               } else {
-                context.go('/');
+                runningBalance -= tx.amount;
+              }
+              if (tx.id == currentTx.id) {
+                calculatedBalanceAfter = runningBalance;
+                break;
               }
             }
-          });
-          return const Scaffold(body: SizedBox.shrink());
-        }
 
-        final isIncome = currentTx.type == TransactionType.income;
-        final finalBalanceAfter =
-            balanceAfter ?? HiveService.calculateBalanceAfter(currentTx.id);
+            final finalBalanceAfter = balanceAfter ?? calculatedBalanceAfter;
 
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: const Text('DETAILS'),
-            leading: IconButton(
-              icon: const Icon(Icons.close_rounded),
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/');
-                }
-              },
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () {
-                  if (UniversalPlatform.isWeb) {
-                    context.go('/add?editId=${currentTx.id}');
-                  } else {
-                    unawaited(context.push('/add?editId=${currentTx.id}'));
-                  }
-                },
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Colors.red,
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              appBar: AppBar(
+                title: const Text('DETAILS'),
+                leading: IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/');
+                    }
+                  },
                 ),
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Transaction?'),
-                      content: const Text('This action cannot be undone.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () {
+                      if (UniversalPlatform.isWeb) {
+                        context.go('/add?editId=${currentTx.id}');
+                      } else {
+                        unawaited(context.push('/add?editId=${currentTx.id}'));
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.red,
+                    ),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Transaction?'),
+                          content: const Text('This action cannot be undone.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.red,
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.red,
-                          ),
-                          child: const Text('Delete'),
-                        ),
+                      );
+
+                      if (confirm == true && context.mounted) {
+                        context.read<TransactionBloc>().add(
+                          DeleteTransaction(currentTx.id),
+                        );
+                        if (context.mounted) {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/');
+                          }
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+              body: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 600;
+                  final hPadding = isNarrow ? 16.0 : 24.0;
+                  final vPadding = isNarrow ? 20.0 : 24.0;
+                  final spacing = isNarrow ? 24.0 : 32.0;
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: hPadding,
+                      vertical: vPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTypeHeader(theme, isIncome, currentTx),
+                        SizedBox(height: spacing),
+                        _buildMainInfo(theme, currentTx),
+                        SizedBox(height: spacing),
+                        _buildSectionTitle('METRICS'),
+                        const SizedBox(height: 16),
+                        _buildMetricsCard(theme, finalBalanceAfter, currentTx),
+                        SizedBox(height: spacing),
+                        _buildSectionTitle('FUNDING SOURCES'),
+                        const SizedBox(height: 16),
+                        _buildSourcesList(theme, currentTx, sourceState),
+                        if (currentTx.description != null &&
+                            currentTx.description!.isNotEmpty) ...[
+                          SizedBox(height: spacing),
+                          _buildSectionTitle('DESCRIPTION'),
+                          const SizedBox(height: 16),
+                          _buildDescriptionCard(theme, currentTx),
+                        ],
+                        if (currentTx.receiptPath != null) ...[
+                          SizedBox(height: spacing),
+                          _buildSectionTitle('RECEIPT SCAN'),
+                          const SizedBox(height: 16),
+                          _buildReceiptCard(theme, currentTx),
+                        ],
+                        SizedBox(height: spacing + 16),
                       ],
                     ),
                   );
-
-                  if (confirm == true) {
-                    await HiveService.transactionsBoxInstance.delete(
-                      currentTx.id,
-                    );
-                    if (context.mounted) {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/');
-                      }
-                    }
-                  }
                 },
               ),
-            ],
-          ),
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 600;
-              final hPadding = isNarrow ? 16.0 : 24.0;
-              final vPadding = isNarrow ? 20.0 : 24.0;
-              final spacing = isNarrow ? 24.0 : 32.0;
-
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: hPadding,
-                  vertical: vPadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTypeHeader(theme, isIncome, currentTx),
-                    SizedBox(height: spacing),
-                    _buildMainInfo(theme, currentTx),
-                    SizedBox(height: spacing),
-                    _buildSectionTitle('METRICS'),
-                    const SizedBox(height: 16),
-                    _buildMetricsCard(theme, finalBalanceAfter, currentTx),
-                    SizedBox(height: spacing),
-                    _buildSectionTitle('FUNDING SOURCES'),
-                    const SizedBox(height: 16),
-                    _buildSourcesList(theme, currentTx),
-                    if (currentTx.description != null &&
-                        currentTx.description!.isNotEmpty) ...[
-                      SizedBox(height: spacing),
-                      _buildSectionTitle('DESCRIPTION'),
-                      const SizedBox(height: 16),
-                      _buildDescriptionCard(theme, currentTx),
-                    ],
-                    if (currentTx.receiptPath != null) ...[
-                      SizedBox(height: spacing),
-                      _buildSectionTitle('RECEIPT SCAN'),
-                      const SizedBox(height: 16),
-                      _buildReceiptCard(theme, currentTx),
-                    ],
-                    SizedBox(height: spacing + 16),
-                  ],
-                ),
-              );
-            },
-          ),
+            );
+          },
         );
       },
     );
@@ -376,7 +409,11 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSourcesList(ThemeData theme, Transaction currentTx) {
+  Widget _buildSourcesList(
+    ThemeData theme,
+    Transaction currentTx,
+    SourceState sourceState,
+  ) {
     final splits = currentTx.sources ?? [];
     if (splits.isEmpty) {
       return const Text('No sources assigned');
@@ -384,7 +421,16 @@ class TransactionDetailScreen extends StatelessWidget {
 
     return Column(
       children: splits.map((split) {
-        final source = HiveService.sourcesBoxInstance.get(split.sourceId);
+        final source = sourceState.sources.firstWhere(
+          (s) => s.id == split.sourceId,
+          orElse: () => Source(
+            id: split.sourceId,
+            name: 'Unknown',
+            icon: '❓',
+            color: '0xFF000000',
+            type: SourceType.cash,
+          ),
+        );
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -394,22 +440,18 @@ class TransactionDetailScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (source != null) ...[
-                Text(source.icon, style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    source.name.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
+              Text(source.icon, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  source.name.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ] else ...[
-                const Expanded(child: Text('UNKNOWN SOURCE')),
-              ],
+              ),
               Text(
                 '\$${split.amount.toStringAsFixed(2)}',
                 style: const TextStyle(

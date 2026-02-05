@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:uuid/uuid.dart';
@@ -49,29 +50,26 @@ class _SourcesScreenState extends State<SourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 16),
-        Expanded(
-          child: ValueListenableBuilder<Box<Transaction>>(
-            valueListenable: HiveService.transactionsBoxInstance.listenable(),
-            builder: (context, txBox, _) {
-              final transactions = txBox.values.toList();
-
-              return ValueListenableBuilder<Box<Source>>(
-                valueListenable: HiveService.sourcesBoxInstance.listenable(),
-                builder: (context, sourceBox, _) {
-                  final sources = sourceBox.values.toList();
-
-                  return _buildSourceList(sources, transactions);
-                },
-              );
-            },
-          ),
-        ),
-      ],
+    return BlocBuilder<SourceBloc, SourceState>(
+      builder: (context, sourceState) {
+        return BlocBuilder<TransactionBloc, TransactionState>(
+          builder: (context, txState) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _buildSourceList(
+                    sourceState.sources,
+                    txState.transactions,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -300,8 +298,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
       ),
     );
 
-    if (confirmed == true) {
-      await HiveService.sourcesBoxInstance.delete(source.id);
+    if (confirmed == true && mounted) {
+      context.read<SourceBloc>().add(DeleteSource(source.id));
     }
   }
 
@@ -371,9 +369,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                     color: '0xFF000000',
                                   );
 
-                                  await HiveService.sourcesBoxInstance.put(
-                                    source.id,
-                                    source,
+                                  context.read<SourceBloc>().add(
+                                    AddSource(source),
                                   );
 
                                   if (initialAmount != 0) {
@@ -393,8 +390,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
                                         ),
                                       ],
                                     );
-                                    await HiveService.transactionsBoxInstance
-                                        .put(initialTx.id, initialTx);
+                                    context.read<TransactionBloc>().add(
+                                      AddTransaction(initialTx),
+                                    );
                                   }
 
                                   if (!context.mounted) return;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:paisa_khai/blocs/category/category_bloc.dart';
 import 'package:paisa_khai/models/category.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:uuid/uuid.dart';
@@ -36,59 +36,58 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 600;
-              final hPadding = isNarrow ? 16.0 : 24.0;
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: hPadding),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TabBar(
-                    dividerColor: Colors.transparent,
-                    indicator: BoxDecoration(
-                      color: theme.colorScheme.onSurface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: theme.colorScheme.surface,
-                    unselectedLabelColor: theme.colorScheme.onSurface
-                        .withValues(
-                          alpha: 0.5,
+      child: BlocBuilder<CategoryBloc, CategoryState>(
+        builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 600;
+                  final hPadding = isNarrow ? 16.0 : 24.0;
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hPadding),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.05,
                         ),
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                      letterSpacing: 1,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TabBar(
+                        dividerColor: Colors.transparent,
+                        indicator: BoxDecoration(
+                          color: theme.colorScheme.onSurface,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        labelColor: theme.colorScheme.surface,
+                        unselectedLabelColor: theme.colorScheme.onSurface
+                            .withValues(
+                              alpha: 0.5,
+                            ),
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                        ),
+                        tabs: const [
+                          Tab(text: 'EXPENSES'),
+                          Tab(text: 'INCOME'),
+                        ],
+                      ),
                     ),
-                    tabs: const [
-                      Tab(text: 'EXPENSES'),
-                      Tab(text: 'INCOME'),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ValueListenableBuilder<Box<Category>>(
-              valueListenable: HiveService.categoriesBoxInstance.listenable(),
-              builder: (context, box, _) {
-                final categories = box.values.toList();
-
-                return TabBarView(
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TabBarView(
                   children: [
                     _buildCategoryList(
-                      categories
+                      state.categories
                           .where(
                             (c) =>
                                 c.type == TransactionType.expense ||
@@ -97,7 +96,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           .toList(),
                     ),
                     _buildCategoryList(
-                      categories
+                      state.categories
                           .where(
                             (c) =>
                                 c.type == TransactionType.income ||
@@ -106,11 +105,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           .toList(),
                     ),
                   ],
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -361,8 +360,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       ),
     );
 
-    if (confirm == true) {
-      await HiveService.categoriesBoxInstance.delete(id);
+    if (confirm == true && mounted) {
+      context.read<CategoryBloc>().add(DeleteCategory(id));
     }
   }
 
@@ -448,9 +447,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                     icon: selectedIcon,
                                     color: '0xFF000000',
                                   );
-                                  await HiveService.categoriesBoxInstance.put(
-                                    category.id,
-                                    category,
+                                  context.read<CategoryBloc>().add(
+                                    AddCategory(category),
                                   );
                                   if (!context.mounted) return;
                                   Navigator.pop(context);

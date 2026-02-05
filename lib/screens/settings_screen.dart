@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
-import 'package:paisa_khai/main.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:paisa_khai/blocs/settings/settings_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/services/csv_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -129,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (!mounted) return;
       _showSuccessSnackbar('Data imported successfully');
 
-      HiveService.transactionsBoxInstance.listenable();
+      context.read<TransactionBloc>().add(LoadTransactions());
     } catch (e) {
       if (!mounted) return;
       _showErrorSnackbar('Import failed: $e');
@@ -158,8 +158,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       isDanger: true,
     );
 
-    if (confirm2 == true) {
-      await HiveService.clearAndReset();
+    if (confirm2 == true && mounted) {
+      context.read<SettingsBloc>().add(ClearAllAppData());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -427,9 +427,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildThemeSelector() {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: ThemeManager.themeMode,
-      builder: (context, currentMode, _) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      builder: (context, state) {
         final theme = Theme.of(context);
         return Container(
           padding: const EdgeInsets.all(6),
@@ -447,8 +446,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                   label: 'Light',
                   icon: Icons.wb_sunny_outlined,
                   selectedIcon: Icons.wb_sunny_rounded,
-                  isSelected: currentMode == ThemeMode.light,
-                  onTap: () => ThemeManager.setThemeMode(ThemeMode.light),
+                  isSelected: state.themeMode == ThemeMode.light,
+                  onTap: () => context.read<SettingsBloc>().add(
+                    const UpdateThemeMode(ThemeMode.light),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
@@ -457,8 +458,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                   label: 'Dark',
                   icon: Icons.dark_mode_outlined,
                   selectedIcon: Icons.dark_mode_rounded,
-                  isSelected: currentMode == ThemeMode.dark,
-                  onTap: () => ThemeManager.setThemeMode(ThemeMode.dark),
+                  isSelected: state.themeMode == ThemeMode.dark,
+                  onTap: () => context.read<SettingsBloc>().add(
+                    const UpdateThemeMode(ThemeMode.dark),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
@@ -467,8 +470,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                   label: 'Auto',
                   icon: Icons.brightness_auto_outlined,
                   selectedIcon: Icons.brightness_auto_rounded,
-                  isSelected: currentMode == ThemeMode.system,
-                  onTap: () => ThemeManager.setThemeMode(ThemeMode.system),
+                  isSelected: state.themeMode == ThemeMode.system,
+                  onTap: () => context.read<SettingsBloc>().add(
+                    const UpdateThemeMode(ThemeMode.system),
+                  ),
                 ),
               ),
             ],

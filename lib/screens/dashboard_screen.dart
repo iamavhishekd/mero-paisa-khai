@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
@@ -19,14 +21,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
-  late List<Transaction> _transactions;
+  List<Transaction> _transactions = [];
+  List<Source> _sources = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _transactions = HiveService.transactionsBoxInstance.values.toList();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -78,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       .fold(0.0, (sum, t) => sum + t.amount);
 
   double get _balance {
-    final initialBalances = HiveService.sourcesBoxInstance.values.fold(
+    final initialBalances = _sources.fold(
       0.0,
       (sum, s) => sum + s.initialBalance,
     );
@@ -162,14 +164,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box<Transaction>>(
-      valueListenable: HiveService.transactionsBoxInstance.listenable(),
-      builder: (context, txBox, _) {
-        _transactions = txBox.values.toList();
+    return BlocBuilder<TransactionBloc, TransactionState>(
+      builder: (context, txState) {
+        return BlocBuilder<SourceBloc, SourceState>(
+          builder: (context, sourceState) {
+            _transactions = txState.transactions;
+            _sources = sourceState.sources;
 
-        return ValueListenableBuilder<Box<Source>>(
-          valueListenable: HiveService.sourcesBoxInstance.listenable(),
-          builder: (context, sourceBox, _) {
             return FadeTransition(
               opacity: _fadeAnimation,
               child: LayoutBuilder(

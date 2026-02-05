@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
+import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:universal_platform/universal_platform.dart';
 
@@ -175,27 +177,24 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       backgroundColor: Colors.transparent,
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            _buildFilterSection(),
-            ValueListenableBuilder<Box<Transaction>>(
-              valueListenable: HiveService.transactionsBoxInstance.listenable(),
-              builder: (context, box, _) {
-                final allTransactions = box.values.toList();
+        child: BlocBuilder<TransactionBloc, TransactionState>(
+          builder: (context, txState) {
+            return BlocBuilder<SourceBloc, SourceState>(
+              builder: (context, sourceState) {
+                final allTransactions = txState.transactions;
                 final filteredTransactions = _filterTransactions(
                   allTransactions,
                 );
 
-                // Calculate running balances using all transactions sorted ascending
+                // Calculate running balances
                 final allForBalance = List<Transaction>.from(allTransactions)
                   ..sort((a, b) => a.date.compareTo(b.date));
 
                 final runningBalances = <String, double>{};
-                double currentBalance = HiveService.sourcesBoxInstance.values
-                    .fold(0.0, (sum, s) => sum + s.initialBalance);
+                double currentBalance = sourceState.sources.fold(
+                  0.0,
+                  (sum, s) => sum + s.initialBalance,
+                );
 
                 for (final tx in allForBalance) {
                   if (tx.type == TransactionType.income) {
@@ -214,37 +213,47 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     .where((t) => t.type == TransactionType.expense)
                     .fold(0.0, (sum, t) => sum + t.amount);
 
-                return Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildStatsBar(
-                        filteredTransactions.length,
-                        filteredIncome,
-                        filteredExpense,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Divider(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.05,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(),
+                    _buildSearchBar(),
+                    _buildFilterSection(sourceState.sources),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildStatsBar(
+                            filteredTransactions.length,
+                            filteredIncome,
+                            filteredExpense,
                           ),
-                        ),
-                      ),
-                      Expanded(
-                        child: filteredTransactions.isEmpty
-                            ? _buildEmptyState()
-                            : _buildTransactionsList(
-                                filteredTransactions,
-                                runningBalances,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                            ),
+                            child: Divider(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.05,
                               ),
+                            ),
+                          ),
+                          Expanded(
+                            child: filteredTransactions.isEmpty
+                                ? _buildEmptyState()
+                                : _buildTransactionsList(
+                                    filteredTransactions,
+                                    runningBalances,
+                                  ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -434,9 +443,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildFilterSection(List<Source> sources) {
     final theme = Theme.of(context);
-    final sources = HiveService.sourcesBoxInstance.values.toList();
     final isNarrow = MediaQuery.of(context).size.width < 600;
     final hPadding = isNarrow ? 16.0 : 24.0;
     final isWide = MediaQuery.of(context).size.width > 800;

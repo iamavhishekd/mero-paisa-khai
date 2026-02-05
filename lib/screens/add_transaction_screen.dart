@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/blocs/category/category_bloc.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/models/category.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
@@ -45,7 +48,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSources();
+    final sourceState = context.read<SourceBloc>().state;
+    final categoryState = context.read<CategoryBloc>().state;
+    _loadSources(sourceState.sources);
     if (widget.transactionToEdit != null) {
       final tx = widget.transactionToEdit!;
       _selectedType = tx.type;
@@ -65,26 +70,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         }
       }
     }
-    _loadCategories();
+    _loadCategories(categoryState.categories);
   }
 
-  void _loadSources() {
-    _availableSources = HiveService.sourcesBoxInstance.values.toList();
+  void _loadSources(List<Source> sources) {
+    _availableSources = sources;
     for (final source in _availableSources) {
-      _sourceControllers[source.id] = TextEditingController();
+      if (!_sourceControllers.containsKey(source.id)) {
+        _sourceControllers[source.id] = TextEditingController();
+      }
     }
   }
 
-  @override
-  void dispose() {
-    for (final controller in _sourceControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  void _loadCategories() {
-    _availableCategories = HiveService.categoriesBoxInstance.values
+  void _loadCategories(List<Category> categories) {
+    _availableCategories = categories
         .where(
           (category) =>
               category.type == _selectedType ||
@@ -92,7 +91,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         )
         .toList();
 
-    if (widget.transactionToEdit != null) {
+    if (widget.transactionToEdit != null && _selectedCategory == null) {
       _selectedCategory = _availableCategories.firstWhere(
         (c) => c.name == widget.transactionToEdit!.category,
         orElse: () => _availableCategories.isNotEmpty
@@ -105,10 +104,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 color: '0xFF808080',
               ),
       );
-    } else if (_availableCategories.isNotEmpty) {
+    } else if (_selectedCategory == null && _availableCategories.isNotEmpty) {
       _selectedCategory = _availableCategories.first;
-    } else {
-      _selectedCategory = null;
     }
   }
 
@@ -195,10 +192,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         receiptPath: _receiptPath,
       );
 
-      await HiveService.transactionsBoxInstance.put(
-        transaction.id,
-        transaction,
-      );
+      if (widget.transactionToEdit != null) {
+        context.read<TransactionBloc>().add(UpdateTransaction(transaction));
+      } else {
+        context.read<TransactionBloc>().add(AddTransaction(transaction));
+      }
 
       if (!mounted) return;
       if (context.canPop()) {
@@ -213,64 +211,88 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 600;
-                  final hPadding = isNarrow ? 16.0 : 32.0;
+    return BlocBuilder<SourceBloc, SourceState>(
+      builder: (context, sourceState) {
+        return BlocBuilder<CategoryBloc, CategoryState>(
+          builder: (context, categoryState) {
+            _loadSources(sourceState.sources);
+            _loadCategories(categoryState.categories);
 
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(hPadding, 0, hPadding, 100),
-                    child: Form(
-                      key: _formKey,
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          final isWide = constraints.maxWidth > 800;
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: isWide ? 6 : 1,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildIdentificationSection(),
-                                    SizedBox(height: isNarrow ? 20 : 32),
-                                    _buildPreferencesSection(),
-                                    SizedBox(height: isNarrow ? 20 : 32),
-                                    _buildSourcesSection(),
-                                    if (!isWide) ...[
-                                      SizedBox(height: isNarrow ? 20 : 32),
-                                      _buildAmountAndDateSection(),
+                          final isNarrow = constraints.maxWidth < 600;
+                          final hPadding = isNarrow ? 16.0 : 32.0;
+
+                          return SingleChildScrollView(
+                            padding: EdgeInsets.fromLTRB(
+                              hPadding,
+                              0,
+                              hPadding,
+                              100,
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isWide = constraints.maxWidth > 800;
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: isWide ? 6 : 1,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _buildIdentificationSection(),
+                                            SizedBox(
+                                              height: isNarrow ? 20 : 32,
+                                            ),
+                                            _buildPreferencesSection(),
+                                            SizedBox(
+                                              height: isNarrow ? 20 : 32,
+                                            ),
+                                            _buildSourcesSection(),
+                                            if (!isWide) ...[
+                                              SizedBox(
+                                                height: isNarrow ? 20 : 32,
+                                              ),
+                                              _buildAmountAndDateSection(),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      if (isWide) ...[
+                                        const SizedBox(width: 32),
+                                        Expanded(
+                                          flex: 4,
+                                          child: _buildAmountAndDateSection(),
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
-                              if (isWide) ...[
-                                const SizedBox(width: 32),
-                                Expanded(
-                                  flex: 4,
-                                  child: _buildAmountAndDateSection(),
-                                ),
-                              ],
-                            ],
+                            ),
                           );
                         },
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -814,7 +836,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             ? null
             : () => setState(() {
                 _selectedType = type;
-                _loadCategories();
+                _loadCategories(context.read<CategoryBloc>().state.categories);
               }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

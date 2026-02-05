@@ -1,8 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:paisa_khai/blocs/category/category_bloc.dart';
+import 'package:paisa_khai/blocs/settings/settings_bloc.dart';
+import 'package:paisa_khai/blocs/source/source_bloc.dart';
+import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/router.dart';
 
@@ -10,27 +13,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   await HiveService.init();
-  ThemeManager.init();
-  runApp(const ExpenseTrackerApp());
-}
-
-class ThemeManager {
-  static final ValueNotifier<ThemeMode> themeMode = ValueNotifier(
-    ThemeMode.system,
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => CategoryBloc()),
+        BlocProvider(create: (context) => SourceBloc()),
+        BlocProvider(create: (context) => TransactionBloc()),
+        BlocProvider(create: (context) => SettingsBloc()),
+      ],
+      child: const ExpenseTrackerApp(),
+    ),
   );
-
-  static void init() {
-    final box = HiveService.settingsBoxInstance;
-    final savedIndex = box.get('theme_mode_index', defaultValue: 0) as int;
-    themeMode.value = ThemeMode.values[savedIndex];
-  }
-
-  static void setThemeMode(ThemeMode mode) {
-    themeMode.value = mode;
-    unawaited(
-      HiveService.settingsBoxInstance.put('theme_mode_index', mode.index),
-    );
-  }
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
@@ -41,14 +34,13 @@ class ExpenseTrackerApp extends StatelessWidget {
     const Color primaryBlack = Color(0xFF0C0D0F);
     const Color surfaceWhite = Color(0xFFF8F9FA);
 
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: ThemeManager.themeMode,
-      builder: (context, currentMode, _) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      builder: (context, state) {
         return MaterialApp.router(
           routerConfig: appRouter,
           title: 'paisa khai',
           debugShowCheckedModeBanner: false,
-          themeMode: currentMode,
+          themeMode: state.themeMode,
           // Light Theme
           theme: ThemeData(
             useMaterial3: true,
