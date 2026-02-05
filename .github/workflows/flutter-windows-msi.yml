@@ -1,0 +1,62 @@
+name: Flutter Windows MSI Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      flutter-version:
+        description: "Flutter version to use"
+        required: true
+        default: "3.38.9"
+      build-type:
+        description: "Build type (release/debug)"
+        required: true
+        default: "release"
+      msi-name:
+        description: "Output MSI file name"
+        required: true
+        default: "MyFlutterApp.msi"
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ github.event.inputs.flutter-version }}
+          cache: true
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows app
+        run: flutter build windows --${{ github.event.inputs['build-type'] }}
+
+      - name: Show built exe (optional)
+        run: dir build\windows\x64\runner\${{ github.event.inputs['build-type'] }}\*.exe
+
+      - name: Install WiX Toolset
+        run: |
+          choco install wixtoolset -y
+          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $env:GITHUB_PATH
+
+      - name: Build MSI installer
+        run: |
+          mkdir installer_build
+          candle windows/installer/main.wxs windows/installer/components.wxs `
+            -dBuildDir=build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
+            -out installer_build/
+          light installer_build/*.wixobj -out ${{ github.event.inputs['msi-name'] }}
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: ${{ github.event.inputs['msi-name'] }}
