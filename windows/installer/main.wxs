@@ -8,7 +8,9 @@
     Manufacturer="Abhishek Dahal"
     UpgradeCode="22515399-078c-4ad7-a583-a3819ff76a26">
 
-    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
     <MediaTemplate />
@@ -17,4 +19,13 @@
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
   </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Paisa Khai" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
 </Wix>
