@@ -21,8 +21,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -30,23 +29,28 @@ jobs:
           flutter-version: ${{ github.event.inputs.flutter-version }}
           cache: true
 
-      - name: Enable Windows desktop
-        run: flutter config --enable-windows-desktop
-
-      - name: Install dependencies
-        run: flutter pub get
+      - run: flutter config --enable-windows-desktop
+      - run: flutter pub get
 
       - name: Build Windows app
         run: flutter build windows --${{ github.event.inputs['build-type'] }}
 
-      - name: Show built exe (optional)
-        run: dir build\windows\x64\runner\${{ github.event.inputs['build-type'] }}\*.exe
-
+      # ✅ Install WiX
       - name: Install WiX Toolset
         run: |
           choco install wixtoolset -y
           echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $env:GITHUB_PATH
 
+      # ✅ Harvest ALL Flutter files
+      - name: Harvest Flutter build files
+        run: |
+          heat dir build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
+            -cg ProductComponents `
+            -dr INSTALLFOLDER `
+            -srd -scom -sreg `
+            -out windows/installer/components.wxs
+
+      # ✅ Build MSI
       - name: Build MSI installer
         run: |
           mkdir installer_build
@@ -55,8 +59,7 @@ jobs:
             -out installer_build/
           light installer_build/*.wixobj -out ${{ github.event.inputs['msi-name'] }}
 
-      - name: Upload MSI
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: windows-msi
           path: ${{ github.event.inputs['msi-name'] }}
