@@ -41,16 +41,17 @@ jobs:
           choco install wixtoolset -y
           echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $env:GITHUB_PATH
 
-      # ✅ Harvest ALL Flutter files
+      # Harvest
       - name: Harvest Flutter build files
         run: |
           heat dir build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
             -cg ProductComponents `
             -dr INSTALLFOLDER `
-            -srd -scom -sreg `
+            -gg `
+            -scom -sreg -sfrag -srd `
             -out windows/installer/components.wxs
 
-      # ✅ Build MSI
+      # Build MSI
       - name: Build MSI installer
         run: |
           mkdir installer_build
@@ -58,7 +59,6 @@ jobs:
             -dBuildDir=build/windows/x64/runner/${{ github.event.inputs['build-type'] }} `
             -out installer_build/
           light installer_build/*.wixobj -out ${{ github.event.inputs['msi-name'] }}
-
       - uses: actions/upload-artifact@v4
         with:
           name: windows-msi
