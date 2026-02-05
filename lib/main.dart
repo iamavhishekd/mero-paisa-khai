@@ -55,20 +55,29 @@ class ExpenseTrackerApp extends StatelessWidget {
             textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme)
                 .copyWith(
                   displayLarge: GoogleFonts.outfit(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: primaryBlack,
+                    textStyle: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: primaryBlack,
+                    ),
                   ),
                   bodyLarge: GoogleFonts.outfit(
-                    fontSize: 16,
-                    color: primaryBlack.withValues(alpha: 0.8),
+                    textStyle: TextStyle(
+                      fontSize: 16,
+                      color: primaryBlack.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  labelLarge: GoogleFonts.outfit(
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-            appBarTheme: const AppBarTheme(
+            appBarTheme: AppBarTheme(
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: false,
-              titleTextStyle: TextStyle(
+              titleTextStyle: GoogleFonts.outfit(
                 color: primaryBlack,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -94,7 +103,11 @@ class ExpenseTrackerApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                textStyle: GoogleFonts.outfit(
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
           ),
@@ -116,20 +129,29 @@ class ExpenseTrackerApp extends StatelessWidget {
             textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
                 .copyWith(
                   displayLarge: GoogleFonts.outfit(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    textStyle: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
                   ),
                   bodyLarge: GoogleFonts.outfit(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    textStyle: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  labelLarge: GoogleFonts.outfit(
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-            appBarTheme: const AppBarTheme(
+            appBarTheme: AppBarTheme(
               backgroundColor: Colors.transparent,
               elevation: 0,
               centerTitle: false,
-              titleTextStyle: TextStyle(
+              titleTextStyle: GoogleFonts.outfit(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -183,7 +205,11 @@ class ExpenseTrackerApp extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              hintStyle: GoogleFonts.outfit(color: Colors.white38),
+              hintStyle: GoogleFonts.outfit(
+                textStyle: const TextStyle(
+                  color: Colors.white38,
+                ),
+              ),
             ),
           ),
         );

@@ -18,3 +18,5 @@ class UpdateThemeMode extends SettingsEvent {
 }
 
 class ClearAllAppData extends SettingsEvent {}
+
+class CompleteOnboarding extends SettingsEvent {}

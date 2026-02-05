@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:paisa_khai/blocs/settings/settings_bloc.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:paisa_khai/screens/add_transaction_screen.dart';
 import 'package:paisa_khai/screens/categories_screen.dart';
 import 'package:paisa_khai/screens/dashboard_screen.dart';
+import 'package:paisa_khai/screens/onboarding_screen.dart';
 import 'package:paisa_khai/screens/settings_screen.dart';
 import 'package:paisa_khai/screens/sources_screen.dart';
 import 'package:paisa_khai/screens/transaction_detail_screen.dart';
@@ -16,7 +19,24 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
+  redirect: (context, state) {
+    final settingsState = context.read<SettingsBloc>().state;
+    final hasSeenOnboarding = settingsState.hasSeenOnboarding;
+    final isOnboarding = state.matchedLocation == '/onboarding';
+
+    if (!hasSeenOnboarding && !isOnboarding) {
+      return '/onboarding';
+    }
+    if (hasSeenOnboarding && isOnboarding) {
+      return '/';
+    }
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return ResponsiveLayout(navigationShell: navigationShell);

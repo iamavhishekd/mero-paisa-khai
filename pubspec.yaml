@@ -9,6 +9,7 @@ environment:
   sdk: ^3.10.8
 
 dependencies:
+  collection: ^1.19.1
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
   equatable: ^2.0.8

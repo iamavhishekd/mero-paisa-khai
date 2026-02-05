@@ -11,6 +11,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<LoadSettings>(_onLoadSettings);
     on<UpdateThemeMode>(_onUpdateThemeMode);
     on<ClearAllAppData>(_onClearAllAppData);
+    on<CompleteOnboarding>(_onCompleteOnboarding);
 
     add(LoadSettings());
   }
@@ -18,7 +19,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   void _onLoadSettings(LoadSettings event, Emitter<SettingsState> emit) {
     final box = HiveService.settingsBoxInstance;
     final savedIndex = box.get('theme_mode_index', defaultValue: 0) as int;
-    emit(state.copyWith(themeMode: ThemeMode.values[savedIndex]));
+    final hasSeenOnboarding =
+        box.get('has_seen_onboarding', defaultValue: false) as bool;
+    emit(
+      state.copyWith(
+        themeMode: ThemeMode.values[savedIndex],
+        hasSeenOnboarding: hasSeenOnboarding,
+      ),
+    );
   }
 
   Future<void> _onUpdateThemeMode(
@@ -30,6 +38,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       event.themeMode.index,
     );
     emit(state.copyWith(themeMode: event.themeMode));
+  }
+
+  Future<void> _onCompleteOnboarding(
+    CompleteOnboarding event,
+    Emitter<SettingsState> emit,
+  ) async {
+    await HiveService.settingsBoxInstance.put('has_seen_onboarding', true);
+    emit(state.copyWith(hasSeenOnboarding: true));
   }
 
   Future<void> _onClearAllAppData(

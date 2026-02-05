@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -219,6 +221,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     _buildHeader(),
                     _buildSearchBar(),
                     _buildFilterSection(sourceState.sources),
+                    if (filteredTransactions.isNotEmpty)
+                      _buildLineChart(filteredTransactions),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1283,6 +1287,97 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLineChart(List<Transaction> transactions) {
+    final theme = Theme.of(context);
+
+    // Sort transactions by date
+    final sortedTxs = List<Transaction>.from(transactions)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // Group by date and calculate net change
+    final groupedData = groupBy(sortedTxs, (tx) {
+      return DateTime(tx.date.year, tx.date.month, tx.date.day);
+    });
+
+    double runningSum = 0;
+    final spots = <FlSpot>[];
+    int index = 0;
+
+    final sortedDates = groupedData.keys.toList()..sort();
+
+    for (final date in sortedDates) {
+      final dayTxs = groupedData[date]!;
+      for (final tx in dayTxs) {
+        if (tx.type == TransactionType.income) {
+          runningSum += tx.amount;
+        } else {
+          runningSum -= tx.amount;
+        }
+      }
+      spots.add(FlSpot(index.toDouble(), runningSum));
+      index++;
+    }
+
+    if (spots.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 180,
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+        ),
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(show: false),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: theme.colorScheme.primary,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.15),
+                    theme.colorScheme.primary.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (spot) => theme.colorScheme.surface,
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map((spot) {
+                  return LineTooltipItem(
+                    '\$${spot.y.toStringAsFixed(2)}',
+                    TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }).toList();
+              },
+            ),
           ),
         ),
       ),
