@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:paisa_khai/blocs/category/category_bloc.dart';
 import 'package:paisa_khai/blocs/source/source_bloc.dart';
 import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
+import 'package:paisa_khai/models/category.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
+import 'package:paisa_khai/widgets/budget_progress_card.dart';
 import 'package:universal_platform/universal_platform.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,6 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   List<Transaction> _transactions = [];
   List<Source> _sources = [];
+  List<Category> _categories = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -168,39 +172,46 @@ class _DashboardScreenState extends State<DashboardScreen>
       builder: (context, txState) {
         return BlocBuilder<SourceBloc, SourceState>(
           builder: (context, sourceState) {
-            _transactions = txState.transactions;
-            _sources = sourceState.sources;
+            return BlocBuilder<CategoryBloc, CategoryState>(
+              builder: (context, categoryState) {
+                _transactions = txState.transactions;
+                _sources = sourceState.sources;
+                _categories = categoryState.categories;
 
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 1000;
-                  final isMedium = constraints.maxWidth > 700;
-                  final isNarrow = constraints.maxWidth < 600;
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 1000;
+                      final isMedium = constraints.maxWidth > 700;
+                      final isNarrow = constraints.maxWidth < 600;
 
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMedium ? 32.0 : (isNarrow ? 16.0 : 20.0),
-                      vertical: isNarrow ? 20 : 32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        SizedBox(height: isNarrow ? 16 : 28),
-                        if (isWide)
-                          _buildWideLayout()
-                        else if (isMedium)
-                          _buildMediumLayout()
-                        else
-                          _buildNarrowLayout(),
-                        const SizedBox(height: 80),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      return SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMedium
+                              ? 32.0
+                              : (isNarrow ? 16.0 : 20.0),
+                          vertical: isNarrow ? 20 : 32,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(),
+                            SizedBox(height: isNarrow ? 16 : 28),
+                            if (isWide)
+                              _buildWideLayout()
+                            else if (isMedium)
+                              _buildMediumLayout()
+                            else
+                              _buildNarrowLayout(),
+                            const SizedBox(height: 80),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             );
           },
         );
@@ -231,6 +242,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Column(
                 children: [
                   _buildSpendingTrendCard(),
+                  const SizedBox(height: 12),
+                  BudgetProgressCard(
+                    transactions: _transactions,
+                    categories: _categories,
+                  ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -290,6 +306,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         const SizedBox(height: 12),
         _buildSpendingTrendCard(),
         const SizedBox(height: 12),
+        BudgetProgressCard(
+          transactions: _transactions,
+          categories: _categories,
+        ),
+        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -337,6 +358,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         _buildQuickStatsCard(),
         const SizedBox(height: 12),
         _buildSpendingTrendCard(),
+        const SizedBox(height: 12),
+        BudgetProgressCard(
+          transactions: _transactions,
+          categories: _categories,
+        ),
         const SizedBox(height: 12),
         _buildCategoryBreakdownCard(),
         const SizedBox(height: 12),
@@ -397,10 +423,33 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             const SizedBox(width: 12),
+            _buildReportButton(theme, isNarrow),
+            const SizedBox(width: 12),
             _buildAddButton(),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildReportButton(ThemeData theme, bool isNarrow) {
+    return IconButton(
+      onPressed: () => context.push('/daily-report'),
+      style: IconButton.styleFrom(
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+        minimumSize: const Size(52, 52),
+        fixedSize: const Size(52, 52),
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+      icon: Icon(
+        Icons.insights_rounded,
+        color: theme.colorScheme.primary,
+        size: 22,
+      ),
+      tooltip: 'Today\'s Report',
     );
   }
 
@@ -434,9 +483,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(
-                horizontal: isVeryNarrow ? 16 : 20,
-                vertical: 16,
+                horizontal: isVeryNarrow ? 16 : 24,
               ),
+              minimumSize: const Size(0, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),

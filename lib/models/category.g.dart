@@ -22,13 +22,14 @@ class CategoryAdapter extends TypeAdapter<Category> {
       type: fields[2] as TransactionType,
       icon: fields[3] as String,
       color: fields[4] as String,
+      budget: (fields[5] as num?)?.toDouble(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Category obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class CategoryAdapter extends TypeAdapter<Category> {
       ..writeByte(3)
       ..write(obj.icon)
       ..writeByte(4)
-      ..write(obj.color);
+      ..write(obj.color)
+      ..writeByte(5)
+      ..write(obj.budget);
   }
 
   @override
@@ -62,6 +65,7 @@ _Category _$CategoryFromJson(Map<String, dynamic> json) => _Category(
   type: $enumDecode(_$TransactionTypeEnumMap, json['type']),
   icon: json['icon'] as String,
   color: json['color'] as String,
+  budget: (json['budget'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$CategoryToJson(_Category instance) => <String, dynamic>{
@@ -70,6 +74,7 @@ Map<String, dynamic> _$CategoryToJson(_Category instance) => <String, dynamic>{
   'type': _$TransactionTypeEnumMap[instance.type]!,
   'icon': instance.icon,
   'color': instance.color,
+  'budget': instance.budget,
 };
 
 const _$TransactionTypeEnumMap = {

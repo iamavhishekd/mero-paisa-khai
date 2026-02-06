@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Category {
 
-@HiveField(0) String get id;@HiveField(1) String get name;@HiveField(2) TransactionType get type;@HiveField(3) String get icon;@HiveField(4) String get color;
+@HiveField(0) String get id;@HiveField(1) String get name;@HiveField(2) TransactionType get type;@HiveField(3) String get icon;@HiveField(4) String get color;@HiveField(5) double? get budget;
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CategoryCopyWith<Category> get copyWith => _$CategoryCopyWithImpl<Category>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.color, color) || other.color == color));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.color, color) || other.color == color)&&(identical(other.budget, budget) || other.budget == budget));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,icon,color);
+int get hashCode => Object.hash(runtimeType,id,name,type,icon,color,budget);
 
 @override
 String toString() {
-  return 'Category(id: $id, name: $name, type: $type, icon: $icon, color: $color)';
+  return 'Category(id: $id, name: $name, type: $type, icon: $icon, color: $color, budget: $budget)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CategoryCopyWith<$Res>  {
   factory $CategoryCopyWith(Category value, $Res Function(Category) _then) = _$CategoryCopyWithImpl;
 @useResult
 $Res call({
-@HiveField(0) String id,@HiveField(1) String name,@HiveField(2) TransactionType type,@HiveField(3) String icon,@HiveField(4) String color
+@HiveField(0) String id,@HiveField(1) String name,@HiveField(2) TransactionType type,@HiveField(3) String icon,@HiveField(4) String color,@HiveField(5) double? budget
 });
 
 
@@ -65,14 +65,15 @@ class _$CategoryCopyWithImpl<$Res>
 
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? icon = null,Object? color = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? icon = null,Object? color = null,Object? budget = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,icon: null == icon ? _self.icon : icon // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
-as String,
+as String,budget: freezed == budget ? _self.budget : budget // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color, @HiveField(5)  double? budget)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Category() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
+return $default(_that.id,_that.name,_that.type,_that.icon,_that.color,_that.budget);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color, @HiveField(5)  double? budget)  $default,) {final _that = this;
 switch (_that) {
 case _Category():
-return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
+return $default(_that.id,_that.name,_that.type,_that.icon,_that.color,_that.budget);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@HiveField(0)  String id, @HiveField(1)  String name, @HiveField(2)  TransactionType type, @HiveField(3)  String icon, @HiveField(4)  String color, @HiveField(5)  double? budget)?  $default,) {final _that = this;
 switch (_that) {
 case _Category() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
+return $default(_that.id,_that.name,_that.type,_that.icon,_that.color,_that.budget);case _:
   return null;
 
 }
@@ -213,7 +214,7 @@ return $default(_that.id,_that.name,_that.type,_that.icon,_that.color);case _:
 @JsonSerializable()
 
 class _Category implements Category {
-  const _Category({@HiveField(0) required this.id, @HiveField(1) required this.name, @HiveField(2) required this.type, @HiveField(3) required this.icon, @HiveField(4) required this.color});
+  const _Category({@HiveField(0) required this.id, @HiveField(1) required this.name, @HiveField(2) required this.type, @HiveField(3) required this.icon, @HiveField(4) required this.color, @HiveField(5) this.budget});
   factory _Category.fromJson(Map<String, dynamic> json) => _$CategoryFromJson(json);
 
 @override@HiveField(0) final  String id;
@@ -221,6 +222,7 @@ class _Category implements Category {
 @override@HiveField(2) final  TransactionType type;
 @override@HiveField(3) final  String icon;
 @override@HiveField(4) final  String color;
+@override@HiveField(5) final  double? budget;
 
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.color, color) || other.color == color));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.color, color) || other.color == color)&&(identical(other.budget, budget) || other.budget == budget));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,icon,color);
+int get hashCode => Object.hash(runtimeType,id,name,type,icon,color,budget);
 
 @override
 String toString() {
-  return 'Category(id: $id, name: $name, type: $type, icon: $icon, color: $color)';
+  return 'Category(id: $id, name: $name, type: $type, icon: $icon, color: $color, budget: $budget)';
 }
 
 
@@ -255,7 +257,7 @@ abstract mixin class _$CategoryCopyWith<$Res> implements $CategoryCopyWith<$Res>
   factory _$CategoryCopyWith(_Category value, $Res Function(_Category) _then) = __$CategoryCopyWithImpl;
 @override @useResult
 $Res call({
-@HiveField(0) String id,@HiveField(1) String name,@HiveField(2) TransactionType type,@HiveField(3) String icon,@HiveField(4) String color
+@HiveField(0) String id,@HiveField(1) String name,@HiveField(2) TransactionType type,@HiveField(3) String icon,@HiveField(4) String color,@HiveField(5) double? budget
 });
 
 
@@ -272,14 +274,15 @@ class __$CategoryCopyWithImpl<$Res>
 
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? icon = null,Object? color = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? icon = null,Object? color = null,Object? budget = freezed,}) {
   return _then(_Category(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,icon: null == icon ? _self.icon : icon // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
-as String,
+as String,budget: freezed == budget ? _self.budget : budget // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

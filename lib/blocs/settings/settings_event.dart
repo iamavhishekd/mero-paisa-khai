@@ -17,6 +17,17 @@ class UpdateThemeMode extends SettingsEvent {
   List<Object?> get props => [themeMode];
 }
 
+class UpdateNotificationSettings extends SettingsEvent {
+  final bool? enabled;
+  final int? hour;
+  final int? minute;
+
+  const UpdateNotificationSettings({this.enabled, this.hour, this.minute});
+
+  @override
+  List<Object?> get props => [enabled, hour, minute];
+}
+
 class ClearAllAppData extends SettingsEvent {}
 
 class CompleteOnboarding extends SettingsEvent {}

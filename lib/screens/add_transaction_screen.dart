@@ -68,6 +68,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           _sourceControllers[split.sourceId]?.text = split.amount
               .toStringAsFixed(2);
         }
+        _autoBalanceSources();
       }
     }
     _loadCategories(categoryState.categories);
@@ -137,12 +138,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   void _autoBalanceSources([String? editedSourceId]) {
-    // Auto-fill disabled as per user request
+    if (_sourceSplits.length == 1) {
+      final sourceId = _sourceSplits.keys.first;
+      _sourceSplits[sourceId] = _amount;
+      // Update controller only if it exists and we're not currently editing it from its own field
+      if (editedSourceId == null) {
+        _sourceControllers[sourceId]?.text = _amount > 0
+            ? _amount.toStringAsFixed(2)
+            : '';
+      }
+    }
   }
 
   Future<void> _saveTransaction() async {
     if (_formKey.currentState!.validate() && _selectedCategory != null) {
       _formKey.currentState!.save();
+
+      if (_sourceSplits.length == 1) {
+        _sourceSplits[_sourceSplits.keys.first] = _amount;
+      }
 
       if (_sourceSplits.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -362,10 +376,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 onPressed:
                     _amount > 0 &&
                         _sourceSplits.isNotEmpty &&
-                        (_sourceSplits.values.fold(0.0, (s, a) => s + a) -
-                                    _amount)
-                                .abs() <
-                            0.01
+                        (_sourceSplits.length == 1 ||
+                            (_sourceSplits.values.fold(0.0, (s, a) => s + a) -
+                                        _amount)
+                                    .abs() <
+                                0.01)
                     ? _saveTransaction
                     : null,
                 style:
@@ -383,7 +398,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       padding: EdgeInsets.symmetric(
                         horizontal: isVeryNarrow ? 20 : 32,
                       ),
-                      minimumSize: const Size(0, 48), // Match X button height
+                      minimumSize: const Size(0, 52),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -423,7 +438,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     alpha: 0.05,
                   ),
                   foregroundColor: theme.colorScheme.onSurface,
-                  minimumSize: const Size(48, 48),
+                  minimumSize: const Size(52, 52),
+                  fixedSize: const Size(52, 52),
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -712,6 +728,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 onChanged: (v) {
                   setState(() {
                     _amount = double.tryParse(v) ?? 0;
+                    _autoBalanceSources();
                   });
                 },
                 validator: (v) {
@@ -1057,10 +1074,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               if (val == true) {
                                 _sourceSplits[source.id] = 0.0;
                                 _sourceControllers[source.id]?.text = '';
+
+                                // If we now have multiple sources, clear all previous auto-fills
+                                if (_sourceSplits.length > 1) {
+                                  for (final id in _sourceSplits.keys) {
+                                    _sourceSplits[id] = 0.0;
+                                    _sourceControllers[id]?.text = '';
+                                  }
+                                }
                               } else {
                                 _sourceSplits.remove(source.id);
                                 _sourceControllers[source.id]?.clear();
                               }
+                              _autoBalanceSources();
                             });
                           },
                           shape: RoundedRectangleBorder(
@@ -1075,59 +1101,71 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         if (isSelected)
                           Padding(
                             padding: const EdgeInsets.only(left: 48),
-                            child: TextFormField(
-                              controller: _sourceControllers[source.id],
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              decoration: InputDecoration(
-                                prefixText: '\$ ',
-                                hintText: '0.00',
-                                isDense: true,
-                                filled: true,
-                                fillColor: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.05),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              onChanged: (v) {
-                                final parsed = double.tryParse(v) ?? 0.0;
-
-                                // Calculate total of other selected sources
-                                double otherTotal = 0;
-                                for (var entry in _sourceSplits.entries) {
-                                  if (entry.key != source.id) {
-                                    otherTotal += entry.value;
-                                  }
-                                }
-
-                                double finalVal = parsed;
-                                if (otherTotal + finalVal > _amount) {
-                                  finalVal = _amount - otherTotal;
-                                  if (finalVal < 0) finalVal = 0;
-
-                                  // Update text field to capped value
-                                  _sourceControllers[source.id]?.text = finalVal
-                                      .toStringAsFixed(2);
-                                  _sourceControllers[source.id]?.selection =
-                                      TextSelection.fromPosition(
-                                        TextPosition(
-                                          offset: _sourceControllers[source.id]!
-                                              .text
-                                              .length,
+                            child: _sourceSplits.length == 1
+                                ? Text(
+                                    '100% will be deducted from this source',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  )
+                                : TextFormField(
+                                    controller: _sourceControllers[source.id],
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
                                         ),
-                                      );
-                                }
+                                    decoration: InputDecoration(
+                                      prefixText: '\$ ',
+                                      hintText: '0.00',
+                                      isDense: true,
+                                      filled: true,
+                                      fillColor: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.05),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    onChanged: (v) {
+                                      final parsed = double.tryParse(v) ?? 0.0;
 
-                                setState(() {
-                                  _sourceSplits[source.id] = finalVal;
-                                });
-                                _autoBalanceSources(source.id);
-                              },
-                            ),
+                                      // Calculate total of other selected sources
+                                      double otherTotal = 0;
+                                      for (var entry in _sourceSplits.entries) {
+                                        if (entry.key != source.id) {
+                                          otherTotal += entry.value;
+                                        }
+                                      }
+
+                                      double finalVal = parsed;
+                                      if (otherTotal + finalVal > _amount) {
+                                        finalVal = _amount - otherTotal;
+                                        if (finalVal < 0) finalVal = 0;
+
+                                        // Update text field to capped value
+                                        _sourceControllers[source.id]?.text =
+                                            finalVal.toStringAsFixed(2);
+                                        _sourceControllers[source.id]
+                                                ?.selection =
+                                            TextSelection.fromPosition(
+                                              TextPosition(
+                                                offset:
+                                                    _sourceControllers[source
+                                                            .id]!
+                                                        .text
+                                                        .length,
+                                              ),
+                                            );
+                                      }
+
+                                      setState(() {
+                                        _sourceSplits[source.id] = finalVal;
+                                      });
+                                      _autoBalanceSources(source.id);
+                                    },
+                                  ),
                           ),
                       ],
                     ),

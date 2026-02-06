@@ -301,6 +301,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _buildThemeSelector(),
                     const SizedBox(height: 40),
                     _buildSectionHeader(
+                      'Notifications',
+                      Icons.notifications_none_rounded,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildNotificationSection(),
+                    const SizedBox(height: 40),
+                    _buildSectionHeader(
                       'Data Management',
                       Icons.folder_outlined,
                     ),
@@ -424,6 +431,190 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
       ],
     );
+  }
+
+  Widget _buildNotificationSection() {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      builder: (context, state) {
+        final theme = Theme.of(context);
+        final timeStr =
+            '${state.notificationHour.toString().padLeft(2, '0')}:${state.notificationMinute.toString().padLeft(2, '0')}';
+
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Column(
+            children: [
+              _buildSettingSwitch(
+                title: 'Daily Summary',
+                subtitle: 'Get notified of your daily spending breakdown',
+                value: state.notificationsEnabled,
+                onChanged: (val) {
+                  context.read<SettingsBloc>().add(
+                    UpdateNotificationSettings(enabled: val),
+                  );
+                },
+              ),
+              if (state.notificationsEnabled) ...[
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                ),
+                _buildSettingTile(
+                  title: 'Reminder Time',
+                  subtitle: 'Notification will be sent at $timeStr',
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      timeStr,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  onTap: () => _selectTime(context, state),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingSwitch({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: theme.colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingTile({
+    required String title,
+    required String subtitle,
+    required Widget trailing,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectTime(BuildContext context, SettingsState state) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: state.notificationHour,
+        minute: state.notificationMinute,
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && context.mounted) {
+      context.read<SettingsBloc>().add(
+        UpdateNotificationSettings(
+          hour: picked.hour,
+          minute: picked.minute,
+        ),
+      );
+    }
   }
 
   Widget _buildThemeSelector() {

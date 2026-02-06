@@ -136,8 +136,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
                     horizontal: isNarrow ? 16 : 28,
-                    vertical: isNarrow ? 14 : 18,
                   ),
+                  minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

@@ -10,6 +10,7 @@ import 'package:paisa_khai/blocs/source/source_bloc.dart';
 import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/models/source.dart';
 import 'package:paisa_khai/models/transaction.dart';
+import 'package:paisa_khai/services/notification_service.dart';
 import 'package:uuid/uuid.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -23,10 +24,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 5;
+  final int _totalPages = 6;
 
   // Step 4: Sources
   final List<Source> _tempSources = [];
+  bool _isProcessing = false;
   final TextEditingController _sourceNameController = TextEditingController();
   final TextEditingController _initialBalanceController =
       TextEditingController();
@@ -59,8 +61,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _nextPage() async {
-    // Prevent moving past sources screen (index 3) without adding at least one source
-    if (_currentPage == 3 && _tempSources.isEmpty) {
+    // Prevent moving past sources screen (index 4) without adding at least one source
+    if (_currentPage == 4 && _tempSources.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add at least one wallet to continue'),
@@ -77,11 +79,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         curve: Curves.easeInOutCubic,
       );
     } else {
-      _completeOnboarding();
+      await _completeOnboarding();
     }
   }
 
-  void _completeOnboarding() {
+  Future<void> _completeOnboarding() async {
+    if (_isProcessing) return;
+
     if (_tempSources.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -91,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       );
       unawaited(
         _pageController.animateToPage(
-          3,
+          4,
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeOutCubic,
         ),
@@ -99,33 +103,54 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       return;
     }
 
-    for (final source in _tempSources) {
-      context.read<SourceBloc>().add(AddSource(source));
+    setState(() {
+      _isProcessing = true;
+    });
 
-      if (source.initialBalance != 0) {
-        final initialTx = Transaction(
-          id: const Uuid().v4(),
-          title: 'Initial Balance - ${source.name}',
-          amount: source.initialBalance.abs(),
-          date: DateTime.now(),
-          type: source.initialBalance > 0
-              ? TransactionType.income
-              : TransactionType.expense,
-          category: 'Initial Balance',
-          sources: [
-            TransactionSourceSplit(
-              sourceId: source.id,
-              amount: source.initialBalance.abs(),
-            ),
-          ],
-        );
-        context.read<TransactionBloc>().add(AddTransaction(initialTx));
+    try {
+      // Simulate a small delay for better UX and to ensure state updates
+      await Future<dynamic>.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      for (final source in _tempSources) {
+        context.read<SourceBloc>().add(AddSource(source));
+
+        if (source.initialBalance != 0) {
+          final initialTx = Transaction(
+            id: const Uuid().v4(),
+            title: 'Initial Balance - ${source.name}',
+            amount: source.initialBalance.abs(),
+            date: DateTime.now(),
+            type: source.initialBalance > 0
+                ? TransactionType.income
+                : TransactionType.expense,
+            category: 'Initial Balance',
+            sources: [
+              TransactionSourceSplit(
+                sourceId: source.id,
+                amount: source.initialBalance.abs(),
+              ),
+            ],
+          );
+          context.read<TransactionBloc>().add(AddTransaction(initialTx));
+        }
       }
-    }
 
-    context.read<SettingsBloc>().add(CompleteOnboarding());
-    if (mounted) {
-      context.go('/');
+      context.read<SettingsBloc>().add(CompleteOnboarding());
+
+      if (mounted) {
+        context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error completing onboarding: $e')),
+        );
+      }
     }
   }
 
@@ -191,77 +216,82 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Background Decorative Orbs
-          if (isDark) ...[
-            Positioned(
-              top: -100,
-              right: -100,
-              child: _buildOrb(
-                theme.colorScheme.primary.withValues(alpha: 0.15),
-                400,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Stack(
+          children: [
+            // Background Decorative Orbs
+            if (isDark) ...[
+              Positioned(
+                top: -100,
+                right: -100,
+                child: _buildOrb(
+                  theme.colorScheme.primary.withValues(alpha: 0.15),
+                  400,
+                ),
               ),
-            ),
-            Positioned(
-              bottom: -150,
-              left: -150,
-              child: _buildOrb(
-                theme.colorScheme.secondary.withValues(alpha: 0.1),
-                500,
+              Positioned(
+                bottom: -150,
+                left: -150,
+                child: _buildOrb(
+                  theme.colorScheme.secondary.withValues(alpha: 0.1),
+                  500,
+                ),
               ),
-            ),
-          ] else ...[
-            Positioned(
-              top: -100,
-              right: -100,
-              child: _buildOrb(
-                theme.colorScheme.primary.withValues(alpha: 0.05),
-                400,
+            ] else ...[
+              Positioned(
+                top: -100,
+                right: -100,
+                child: _buildOrb(
+                  theme.colorScheme.primary.withValues(alpha: 0.05),
+                  400,
+                ),
               ),
+              Positioned(
+                bottom: -150,
+                left: -150,
+                child: _buildOrb(
+                  theme.colorScheme.secondary.withValues(alpha: 0.05),
+                  500,
+                ),
+              ),
+            ],
+
+            // Blur effect
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(color: Colors.transparent),
             ),
-            Positioned(
-              bottom: -150,
-              left: -150,
-              child: _buildOrb(
-                theme.colorScheme.secondary.withValues(alpha: 0.05),
-                500,
+
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) =>
+                          setState(() => _currentPage = index),
+                      physics: const ClampingScrollPhysics(),
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildIntroStep(theme),
+                        _buildFeaturesStep(theme),
+                        _buildSecurityStep(theme),
+                        _buildNotificationsStep(theme),
+                        _buildSourcesStep(theme, isDark),
+                        _buildFinalStep(theme, isDark),
+                      ],
+                    ),
+                  ),
+                  _buildFooter(theme, isDark),
+                ],
               ),
             ),
           ],
-
-          // Blur effect
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(color: Colors.transparent),
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) =>
-                        setState(() => _currentPage = index),
-                    physics: const ClampingScrollPhysics(),
-                    clipBehavior: Clip.none,
-                    children: [
-                      _buildIntroStep(theme),
-                      _buildFeaturesStep(theme),
-                      _buildSecurityStep(theme),
-                      _buildSourcesStep(theme, isDark),
-                      _buildFinalStep(theme, isDark),
-                    ],
-                  ),
-                ),
-                _buildFooter(theme, isDark),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -304,6 +334,84 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       description:
           'Your financial data stays 100% on your device. We respect your privacy above all else.',
       theme: theme,
+    );
+  }
+
+  Widget _buildNotificationsStep(ThemeData theme) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLarge = constraints.maxWidth > 800;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: isLarge
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildStepIcon(
+                      Icons.notifications_active_rounded,
+                      theme,
+                      160,
+                    ),
+                    const SizedBox(width: 80),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStepText(
+                            'Stay Notified',
+                            'Receive daily reminders to track your expenses and get insights into your financial health.',
+                            theme,
+                            true,
+                            true,
+                          ),
+                          const SizedBox(height: 32),
+                          _buildPermissionButton(theme),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildStepIcon(
+                      Icons.notifications_active_rounded,
+                      theme,
+                      120,
+                    ),
+                    const SizedBox(height: 48),
+                    _buildStepText(
+                      'Stay Notified',
+                      'Receive daily reminders to track your expenses and get insights into your financial health.',
+                      theme,
+                      false,
+                      false,
+                    ),
+                    const SizedBox(height: 32),
+                    _buildPermissionButton(theme),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPermissionButton(ThemeData theme) {
+    return ElevatedButton.icon(
+      onPressed: () async {
+        await NotificationService().requestPermissions();
+        // Skip if user already enabled or just to move forward implicitly
+        if (!mounted) return;
+        await _nextPage();
+      },
+      icon: const Icon(Icons.check_circle_outline_rounded),
+      label: const Text('ENABLE NOTIFICATIONS'),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 
@@ -447,7 +555,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             ),
                           ),
                           const SizedBox(height: 48),
-                          _buildAddSourceCard(theme),
+                          _buildAddSourceCard(theme, true),
                         ],
                       ),
                     ),
@@ -486,7 +594,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildAddSourceCard(theme),
+                _buildAddSourceCard(theme, false),
                 const SizedBox(height: 32),
                 SizedBox(
                   height: 280,
@@ -603,16 +711,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildAddSourceCard(ThemeData theme) {
+  Widget _buildAddSourceCard(ThemeData theme, bool isLarge) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isLarge ? 32 : 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
+        color: theme.colorScheme.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(isLarge ? 32 : 24),
+        boxShadow: [
+          if (theme.brightness == Brightness.dark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -629,32 +741,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   decoration: InputDecoration(
                     hintText: 'Source Name',
                     filled: true,
-                    fillColor: theme.colorScheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                    fillColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.05,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: isLarge ? 16 : 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
+                      borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
+                      borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: theme.colorScheme.primary,
-                        width: 2,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                        width: 1.5,
                       ),
                     ),
                   ),
@@ -664,7 +770,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -690,7 +796,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -702,32 +808,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     hintText: 'Balance',
                     prefixText: 'Rs. ',
                     filled: true,
-                    fillColor: theme.colorScheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                    fillColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.05,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: isLarge ? 16 : 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
+                      borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
+                      borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: theme.colorScheme.primary,
-                        width: 2,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                        width: 1.5,
                       ),
                     ),
                   ),
@@ -741,9 +841,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.onSurface,
                   foregroundColor: theme.colorScheme.surface,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 18,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: isLarge ? 18 : 14,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -798,28 +898,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CARD HOLDER',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CARD HOLDER',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    source.name.toUpperCase(),
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
+                    const SizedBox(height: 4),
+                    Text(
+                      source.name.toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               _buildCardBrand(source.type),
             ],
@@ -829,13 +933,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             children: [
               _buildChip(),
               const SizedBox(width: 24),
-              Text(
-                '****  ****  ****  $lastFour',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: isLarge ? 28 : 22,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '****  ****  ****  $lastFour',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: isLarge ? 28 : 22,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -845,29 +955,35 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BALANCE',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BALANCE',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rs. ${source.initialBalance.toStringAsFixed(0)}',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: isLarge ? 44 : 28,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Rs. ${source.initialBalance.toStringAsFixed(0)}',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: isLarge ? 44 : 28,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (index == 0)
                 Material(
@@ -955,7 +1071,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   'Choose your vibe',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
-                    fontSize: 56,
+                    fontSize: MediaQuery.of(context).size.width > 600 ? 56 : 36,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -1,
                   ),
@@ -1047,69 +1163,113 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildFooter(ThemeData theme, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 48),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: List.generate(
-                  _totalPages,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.only(right: 14),
-                    width: _currentPage == index ? 48 : 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: _nextPage,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 18,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  backgroundColor: theme.colorScheme.onSurface,
-                  foregroundColor: theme.colorScheme.surface,
-                  elevation: 0,
-                  textStyle: GoogleFonts.outfit(
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _currentPage == _totalPages - 1
-                          ? 'GET STARTED'
-                          : 'CONTINUE',
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.arrow_forward_rounded, size: 24),
-                  ],
-                ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxWidth < 500;
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmall ? 24 : 60,
+            vertical: isSmall ? 24 : 48,
           ),
-        ),
-      ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (!isSmall)
+                    Row(
+                      children: List.generate(
+                        _totalPages,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(right: 14),
+                          width: _currentPage == index ? 48 : 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.1,
+                                  ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Row(
+                      children: List.generate(
+                        _totalPages,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(right: 8),
+                          width: _currentPage == index ? 32 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.1,
+                                  ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ElevatedButton(
+                    onPressed: _nextPage,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmall ? 20 : 32,
+                        vertical: isSmall ? 14 : 18,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(isSmall ? 16 : 20),
+                      ),
+                      backgroundColor: theme.colorScheme.onSurface,
+                      foregroundColor: theme.colorScheme.surface,
+                      elevation: 0,
+                      textStyle: GoogleFonts.outfit(
+                        textStyle: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: isSmall ? 14 : 16,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: _isProcessing
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color:
+                                  Colors.black, // Since initial theme is light
+                            ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _currentPage == _totalPages - 1
+                                    ? 'GET STARTED'
+                                    : 'CONTINUE',
+                              ),
+                              SizedBox(width: isSmall ? 8 : 12),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: isSmall ? 20 : 24,
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

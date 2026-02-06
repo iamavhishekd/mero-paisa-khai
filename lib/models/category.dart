@@ -14,6 +14,7 @@ abstract class Category with _$Category {
     @HiveField(2) required TransactionType type,
     @HiveField(3) required String icon,
     @HiveField(4) required String color,
+    @HiveField(5) double? budget,
   }) = _Category;
 
   factory Category.fromJson(Map<String, dynamic> json) =>

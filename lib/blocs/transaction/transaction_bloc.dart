@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
+import 'package:paisa_khai/services/notification_service.dart';
 
 part 'transaction_event.dart';
 part 'transaction_state.dart';
@@ -53,6 +54,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       event.transaction.id,
       event.transaction,
     );
+    // Update notification content for the day
+    try {
+      await NotificationService().updateDailyNotificationContent();
+    } catch (_) {}
   }
 
   Future<void> _onUpdateTransaction(

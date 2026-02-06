@@ -173,7 +173,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: () => _showAddCategoryDialog(context),
+                onPressed: () => _showCategoryDialog(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -181,8 +181,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
                     horizontal: isNarrow ? 16 : 28,
-                    vertical: isNarrow ? 14 : 18,
                   ),
+                  minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -317,6 +317,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           IconButton(
             icon: Icon(
+              Icons.edit_outlined,
+              size: 20,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            onPressed: () =>
+                _showCategoryDialog(context, categoryToEdit: category),
+          ),
+          IconButton(
+            icon: Icon(
               Icons.delete_outline,
               size: 20,
               color: Theme.of(
@@ -365,10 +376,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  Future<void> _showAddCategoryDialog(BuildContext context) async {
-    final nameController = TextEditingController();
-    TransactionType selectedType = TransactionType.expense;
-    String selectedIcon = '💰';
+  Future<void> _showCategoryDialog(
+    BuildContext context, {
+    Category? categoryToEdit,
+  }) async {
+    final nameController = TextEditingController(
+      text: categoryToEdit?.name ?? '',
+    );
+    final budgetController = TextEditingController(
+      text: categoryToEdit?.budget != null && categoryToEdit!.budget! > 0
+          ? categoryToEdit.budget.toString()
+          : '',
+    );
+    TransactionType selectedType =
+        categoryToEdit?.type ?? TransactionType.expense;
+    String selectedIcon = categoryToEdit?.icon ?? '💰';
     final uuid = const Uuid();
     final theme = Theme.of(context);
 
@@ -425,9 +447,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                 ),
                               ),
                             ),
-                            const Text(
-                              'NEW TAG',
-                              style: TextStyle(
+                            Text(
+                              categoryToEdit != null ? 'EDIT TAG' : 'NEW TAG',
+                              style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.5,
@@ -440,16 +462,29 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             ElevatedButton(
                               onPressed: () async {
                                 if (nameController.text.isNotEmpty) {
+                                  final budget = double.tryParse(
+                                    budgetController.text,
+                                  );
                                   final category = Category(
-                                    id: uuid.v4(),
+                                    id: categoryToEdit?.id ?? uuid.v4(),
                                     name: nameController.text,
                                     type: selectedType,
                                     icon: selectedIcon,
-                                    color: '0xFF000000',
+                                    color:
+                                        categoryToEdit?.color ?? '0xFF000000',
+                                    budget: budget,
                                   );
-                                  context.read<CategoryBloc>().add(
-                                    AddCategory(category),
-                                  );
+
+                                  if (categoryToEdit != null) {
+                                    context.read<CategoryBloc>().add(
+                                      UpdateCategory(category),
+                                    );
+                                  } else {
+                                    context.read<CategoryBloc>().add(
+                                      AddCategory(category),
+                                    );
+                                  }
+
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
                                 }
@@ -463,7 +498,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: const Text('CREATE'),
+                              child: Text(
+                                categoryToEdit != null ? 'SAVE' : 'CREATE',
+                              ),
                             ),
                             const SizedBox(width: 12),
                             IconButton(
@@ -515,7 +552,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: nameController,
-                            autofocus: true,
+                            autofocus: categoryToEdit == null,
                             decoration: InputDecoration(
                               hintText: 'e.g., Subscriptions',
                               prefixIcon: const Icon(
@@ -536,6 +573,38 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           _buildModalTypeSelector(selectedType, (type) {
                             setModalState(() => selectedType = type);
                           }),
+                          if (selectedType != TransactionType.income) ...[
+                            const SizedBox(height: 24),
+                            const Text(
+                              'MONTHLY BUDGET (OPTIONAL)',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: budgetController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                prefixIcon: const Icon(
+                                  Icons.pie_chart_outline_rounded,
+                                  size: 18,
+                                ),
+                                filled: true,
+                                fillColor: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

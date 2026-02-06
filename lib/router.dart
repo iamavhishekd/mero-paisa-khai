@@ -6,6 +6,7 @@ import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/models/transaction.dart';
 import 'package:paisa_khai/screens/add_transaction_screen.dart';
 import 'package:paisa_khai/screens/categories_screen.dart';
+import 'package:paisa_khai/screens/daily_report_screen.dart';
 import 'package:paisa_khai/screens/dashboard_screen.dart';
 import 'package:paisa_khai/screens/onboarding_screen.dart';
 import 'package:paisa_khai/screens/settings_screen.dart';
@@ -16,9 +17,18 @@ import 'package:paisa_khai/widgets/responsive_layout.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+class RouterNotifier extends ChangeNotifier {
+  static final RouterNotifier _instance = RouterNotifier._internal();
+  factory RouterNotifier() => _instance;
+  RouterNotifier._internal();
+
+  void notify() => notifyListeners();
+}
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
+  refreshListenable: RouterNotifier(),
   redirect: (context, state) {
     final settingsState = context.read<SettingsBloc>().state;
     final hasSeenOnboarding = settingsState.hasSeenOnboarding;
@@ -112,6 +122,11 @@ final GoRouter appRouter = GoRouter(
 
         return TransactionDetailScreen(transaction: transaction);
       },
+    ),
+    GoRoute(
+      path: '/daily-report',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const DailyReportScreen(),
     ),
   ],
 );

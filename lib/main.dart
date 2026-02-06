@@ -8,11 +8,24 @@ import 'package:paisa_khai/blocs/source/source_bloc.dart';
 import 'package:paisa_khai/blocs/transaction/transaction_bloc.dart';
 import 'package:paisa_khai/hive/hive_service.dart';
 import 'package:paisa_khai/router.dart';
+import 'package:paisa_khai/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   await HiveService.init();
+  final notificationService = NotificationService();
+  await notificationService.init();
+
+  // Check if launched from notification
+  final launchDetails = await notificationService
+      .getNotificationAppLaunchDetails();
+  if (launchDetails?.didNotificationLaunchApp ?? false) {
+    // Give router a moment to initialize
+    await Future.microtask(() => appRouter.push('/daily-report'));
+  }
+
+  await notificationService.scheduleDailyReminder();
   runApp(
     MultiBlocProvider(
       providers: [
@@ -36,178 +49,187 @@ class ExpenseTrackerApp extends StatelessWidget {
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
-        return MaterialApp.router(
-          routerConfig: appRouter,
-          title: 'paisa khai',
-          debugShowCheckedModeBanner: false,
-          themeMode: state.themeMode,
-          // Light Theme
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: primaryBlack,
-              primary: primaryBlack,
-              secondary: surfaceWhite,
-              surface: surfaceWhite,
-            ),
-            scaffoldBackgroundColor: surfaceWhite,
-            textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme)
-                .copyWith(
-                  displayLarge: GoogleFonts.outfit(
-                    textStyle: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: primaryBlack,
-                    ),
-                  ),
-                  bodyLarge: GoogleFonts.outfit(
-                    textStyle: TextStyle(
-                      fontSize: 16,
-                      color: primaryBlack.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  labelLarge: GoogleFonts.outfit(
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              centerTitle: false,
-              titleTextStyle: GoogleFonts.outfit(
-                color: primaryBlack,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+        return BlocListener<SettingsBloc, SettingsState>(
+          listenWhen: (prev, curr) =>
+              prev.hasSeenOnboarding != curr.hasSeenOnboarding,
+          listener: (context, state) {
+            RouterNotifier().notify();
+          },
+          child: MaterialApp.router(
+            routerConfig: appRouter,
+            title: 'paisa khai',
+            debugShowCheckedModeBanner: false,
+            themeMode: state.themeMode,
+            // Light Theme
+            theme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.light,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: primaryBlack,
+                primary: primaryBlack,
+                secondary: surfaceWhite,
+                surface: surfaceWhite,
               ),
-            ),
-            cardTheme: CardThemeData(
-              color: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryBlack,
-                foregroundColor: Colors.white,
+              scaffoldBackgroundColor: surfaceWhite,
+              textTheme:
+                  GoogleFonts.outfitTextTheme(
+                    ThemeData.light().textTheme,
+                  ).copyWith(
+                    displayLarge: GoogleFonts.outfit(
+                      textStyle: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: primaryBlack,
+                      ),
+                    ),
+                    bodyLarge: GoogleFonts.outfit(
+                      textStyle: TextStyle(
+                        fontSize: 16,
+                        color: primaryBlack.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    labelLarge: GoogleFonts.outfit(
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: GoogleFonts.outfit(
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                  ),
+                centerTitle: false,
+                titleTextStyle: GoogleFonts.outfit(
+                  color: primaryBlack,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ),
-          // Dark Theme
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: surfaceWhite,
-              brightness: Brightness.dark,
-              primary: surfaceWhite,
-              onPrimary: primaryBlack,
-              secondary: surfaceWhite,
-              surface: primaryBlack,
-              onSurface: Colors.white,
-              surfaceContainerLowest: const Color(0xFF16181D),
-            ),
-            scaffoldBackgroundColor: primaryBlack,
-            textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
-                .copyWith(
-                  displayLarge: GoogleFonts.outfit(
-                    textStyle: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
+              cardTheme: CardThemeData(
+                color: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlack,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
                   ),
-                  bodyLarge: GoogleFonts.outfit(
-                    textStyle: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  labelLarge: GoogleFonts.outfit(
+                  textStyle: GoogleFonts.outfit(
                     textStyle: const TextStyle(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              centerTitle: false,
-              titleTextStyle: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
               ),
             ),
-            cardTheme: CardThemeData(
-              color: const Color(0xFF1C1F26),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            // Dark Theme
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: surfaceWhite,
+                brightness: Brightness.dark,
+                primary: surfaceWhite,
+                onPrimary: primaryBlack,
+                secondary: surfaceWhite,
+                surface: primaryBlack,
+                onSurface: Colors.white,
+                surfaceContainerLowest: const Color(0xFF16181D),
               ),
-            ),
-            floatingActionButtonTheme: const FloatingActionButtonThemeData(
-              backgroundColor: Color(0xFFE2C08D),
-              foregroundColor: Color(0xFF0C0D0F),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
-            ),
-            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: Color(0xFF16181D),
-              selectedItemColor: Color(0xFFE2C08D),
-              unselectedItemColor: Colors.white54,
-              type: BottomNavigationBarType.fixed,
-              elevation: 0,
-            ),
-            inputDecorationTheme: InputDecorationTheme(
-              filled: true,
-              fillColor: const Color(0xFF1C1F26),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
+              scaffoldBackgroundColor: primaryBlack,
+              textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
+                  .copyWith(
+                    displayLarge: GoogleFonts.outfit(
+                      textStyle: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                    bodyLarge: GoogleFonts.outfit(
+                      textStyle: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    labelLarge: GoogleFonts.outfit(
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                centerTitle: false,
+                titleTextStyle: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
+              cardTheme: CardThemeData(
+                color: const Color(0xFF1C1F26),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
                 ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE2C08D),
-                  width: 2,
+              floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                backgroundColor: Color(0xFFE2C08D),
+                foregroundColor: Color(0xFF0C0D0F),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
                 ),
               ),
-              hintStyle: GoogleFonts.outfit(
-                textStyle: const TextStyle(
-                  color: Colors.white38,
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Color(0xFF16181D),
+                selectedItemColor: Color(0xFFE2C08D),
+                unselectedItemColor: Colors.white54,
+                type: BottomNavigationBarType.fixed,
+                elevation: 0,
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFF1C1F26),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFE2C08D),
+                    width: 2,
+                  ),
+                ),
+                hintStyle: GoogleFonts.outfit(
+                  textStyle: const TextStyle(
+                    color: Colors.white38,
+                  ),
                 ),
               ),
             ),
