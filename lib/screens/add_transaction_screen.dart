@@ -105,7 +105,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 color: '0xFF808080',
               ),
       );
-    } else if (_selectedCategory == null && _availableCategories.isNotEmpty) {
+    } else if (_selectedCategory != null) {
+      // Category was already selected - sync to new list by ID
+      final matchingCategory = _availableCategories.where(
+        (c) => c.id == _selectedCategory!.id,
+      );
+      if (matchingCategory.isNotEmpty) {
+        _selectedCategory = matchingCategory.first;
+      } else if (_availableCategories.isNotEmpty) {
+        // Previously selected category no longer available, pick first
+        _selectedCategory = _availableCategories.first;
+      } else {
+        _selectedCategory = null;
+      }
+    } else if (_availableCategories.isNotEmpty) {
+      // No selection yet - pick first available
       _selectedCategory = _availableCategories.first;
     }
   }
