@@ -189,15 +189,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                       return SingleChildScrollView(
                         padding: EdgeInsets.symmetric(
                           horizontal: isMedium
-                              ? 32.0
+                              ? 24.0
                               : (isNarrow ? 16.0 : 20.0),
-                          vertical: isNarrow ? 20 : 32,
+                          vertical: isNarrow ? 16 : 24,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildHeader(),
-                            SizedBox(height: isNarrow ? 16 : 28),
+                            SizedBox(height: isNarrow ? 16 : 24),
                             if (isWide)
                               _buildWideLayout()
                             else if (isMedium)
@@ -223,15 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final theme = Theme.of(context);
     return Column(
       children: [
-        // Top row: Balance card + Quick Stats
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 3, child: _buildBalanceCard()),
-            const SizedBox(width: 20),
-            Expanded(flex: 2, child: _buildQuickStatsCard()),
-          ],
-        ),
+        _buildBalanceCard(),
         const SizedBox(height: 12),
         // Middle row: Charts + Recent Activity
         Row(
@@ -260,9 +252,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(alpha: 0.015),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -301,9 +293,21 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Column(
       children: [
         _buildBalanceCard(),
-        const SizedBox(height: 20),
-        _buildQuickStatsCard(),
         const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Only show quick stats if balance card is too narrow to show its own summary
+            if (constraints.maxWidth <= 400) {
+              return Column(
+                children: [
+                  _buildQuickStatsCard(),
+                  const SizedBox(height: 12),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         _buildSpendingTrendCard(),
         const SizedBox(height: 12),
         BudgetProgressCard(
@@ -354,9 +358,21 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Column(
       children: [
         _buildBalanceCard(),
-        const SizedBox(height: 20),
-        _buildQuickStatsCard(),
         const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Only show quick stats if balance card is too narrow to show its own summary
+            if (constraints.maxWidth <= 400) {
+              return Column(
+                children: [
+                  _buildQuickStatsCard(),
+                  const SizedBox(height: 12),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         _buildSpendingTrendCard(),
         const SizedBox(height: 12),
         BudgetProgressCard(
@@ -466,10 +482,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             boxShadow: [
               BoxShadow(
                 color: theme.brightness == Brightness.dark
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : theme.colorScheme.primary.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : theme.colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -533,14 +549,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                 theme.colorScheme.primary.withValues(alpha: 0.85),
               ],
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
                 color: theme.brightness == Brightness.dark
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : theme.colorScheme.primary.withValues(alpha: 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : theme.colorScheme.primary.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -564,10 +580,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                               child: Icon(
                                 Icons.account_balance_wallet_rounded,
                                 color: theme.colorScheme.onPrimary,
-                                size: 20,
+                                size: 18,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Text(
                               'TOTAL BALANCE',
                               style: TextStyle(
@@ -635,10 +651,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Across ${HiveService.sourcesBoxInstance.values.length} accounts',
+                      'Across ${_sources.length} accounts • ${_transactions.length} records • ${_topCategories.length} categories',
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onPrimary.withValues(
                           alpha: 0.6,
                         ),
@@ -650,9 +666,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               if (showExtra) ...[
                 Container(
                   width: 1,
-                  height: 100,
+                  height: 80,
                   color: theme.colorScheme.onPrimary.withValues(alpha: 0.1),
-                  margin: const EdgeInsets.symmetric(horizontal: 32),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
                 ),
                 Expanded(
                   child: Column(
@@ -771,10 +787,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     final monthName = DateFormat('MMMM').format(now);
 
     return Container(
-      padding: EdgeInsets.all(isNarrow ? 18 : 24),
+      padding: EdgeInsets.all(isNarrow ? 16 : 20),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         ),
@@ -805,12 +821,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             Icons.north_east_rounded,
             Colors.redAccent,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Container(
             height: 1,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildStatRow(
             'Net',
             '\$${(_monthlyIncome - _monthlyExpense).toStringAsFixed(0)}',
@@ -819,7 +835,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ? const Color(0xFF10B981)
                 : Colors.redAccent,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -892,10 +908,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           Icon(
             icon,
-            size: 18,
+            size: 16,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
@@ -933,18 +949,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     }).toList();
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.01),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1032,9 +1048,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         getDrawingHorizontalLine: (value) {
                           return FlLine(
                             color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.05,
+                              alpha: 0.04,
                             ),
-                            strokeWidth: 1,
+                            strokeWidth: 0.5,
                           );
                         },
                       ),
@@ -1129,7 +1145,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         if (categories.isEmpty)
           SizedBox(
             height: 150,
@@ -1169,10 +1185,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (isUnified) return content;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         ),
@@ -1306,10 +1322,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (isUnified) return content;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         ),
@@ -1400,10 +1416,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     final recent = recentTransactions.take(6).toList();
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
         ),
@@ -1444,7 +1460,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (recent.isEmpty)
             SizedBox(
               height: 200,
@@ -1504,12 +1520,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             unawaited(context.push('/transaction/${tx.id}'));
           }
         },
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
             ),

@@ -54,13 +54,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.05,
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: TabBar(
                         dividerColor: Colors.transparent,
                         indicator: BoxDecoration(
                           color: theme.colorScheme.onSurface,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         indicatorSize: TabBarIndicatorSize.tab,
                         labelColor: theme.colorScheme.surface,
@@ -124,7 +124,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         return Padding(
           padding: EdgeInsets.symmetric(
             horizontal: hPadding,
-            vertical: 24,
+            vertical: 16,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -164,7 +164,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       'Categories',
                       style: theme.textTheme.displayLarge?.copyWith(
                         letterSpacing: -1,
-                        fontSize: isNarrow ? 28 : 40,
+                        fontSize: isNarrow ? 24 : 32,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -180,11 +180,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   elevation: 2,
                   shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isNarrow ? 16 : 28,
+                    horizontal: isNarrow ? 14 : 20,
                   ),
-                  minimumSize: const Size(0, 52),
+                  minimumSize: const Size(0, 48),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Row(
@@ -278,10 +278,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Widget _buildCategoryItem(Category category) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(
             context,
@@ -302,10 +302,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
             child: Text(
               category.icon,
-              style: const TextStyle(fontSize: 24),
+              style: const TextStyle(fontSize: 20),
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               category.name,
@@ -416,13 +416,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 decoration: BoxDecoration(
                   color: theme.scaffoldBackgroundColor,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(32),
+                    top: Radius.circular(24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 40,
-                      offset: const Offset(0, -10),
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, -8),
                     ),
                   ],
                 ),

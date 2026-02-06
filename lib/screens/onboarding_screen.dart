@@ -342,7 +342,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       builder: (context, constraints) {
         final isLarge = constraints.maxWidth > 800;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: isLarge ? 40 : 24),
           child: isLarge
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -350,9 +350,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     _buildStepIcon(
                       Icons.notifications_active_rounded,
                       theme,
-                      160,
+                      120,
                     ),
-                    const SizedBox(width: 80),
+                    const SizedBox(width: 60),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 500),
                       child: Column(
@@ -366,7 +366,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             true,
                             true,
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
                           _buildPermissionButton(theme),
                         ],
                       ),
@@ -379,9 +379,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     _buildStepIcon(
                       Icons.notifications_active_rounded,
                       theme,
-                      120,
+                      80,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
                     _buildStepText(
                       'Stay Notified',
                       'Receive daily reminders to track your expenses and get insights into your financial health.',
@@ -389,7 +389,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       false,
                       false,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     _buildPermissionButton(theme),
                   ],
                 ),
@@ -406,11 +406,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         if (!mounted) return;
         await _nextPage();
       },
-      icon: const Icon(Icons.check_circle_outline_rounded),
+      icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
       label: const Text('ENABLE NOTIFICATIONS'),
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -425,13 +425,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       builder: (context, constraints) {
         final isLarge = constraints.maxWidth > 800;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: isLarge ? 40 : 24),
           child: isLarge
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildStepIcon(icon, theme, 160),
-                    const SizedBox(width: 80),
+                    _buildStepIcon(icon, theme, 120),
+                    const SizedBox(width: 60),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 500),
                       child: _buildStepText(
@@ -447,8 +447,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildStepIcon(icon, theme, 120),
-                    const SizedBox(height: 48),
+                    _buildStepIcon(icon, theme, 80),
+                    const SizedBox(height: 32),
                     _buildStepText(title, description, theme, false, false),
                   ],
                 ),
@@ -713,16 +713,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   Widget _buildAddSourceCard(ThemeData theme, bool isLarge) {
     return Container(
-      padding: EdgeInsets.all(isLarge ? 32 : 12),
+      padding: EdgeInsets.all(isLarge ? 32 : 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(isLarge ? 32 : 24),
+        borderRadius: BorderRadius.circular(isLarge ? 24 : 16),
         boxShadow: [
           if (theme.brightness == Brightness.dark)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
         ],
       ),

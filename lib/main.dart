@@ -108,7 +108,7 @@ class ExpenseTrackerApp extends StatelessWidget {
                 color: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
                 ),
               ),
@@ -118,11 +118,11 @@ class ExpenseTrackerApp extends StatelessWidget {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                    horizontal: 20,
+                    vertical: 10,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   textStyle: GoogleFonts.outfit(
                     textStyle: const TextStyle(
@@ -182,7 +182,7 @@ class ExpenseTrackerApp extends StatelessWidget {
                 color: const Color(0xFF1C1F26),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
                 ),
               ),
@@ -190,7 +190,7 @@ class ExpenseTrackerApp extends StatelessWidget {
                 backgroundColor: Color(0xFFE2C08D),
                 foregroundColor: Color(0xFF0C0D0F),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
               ),
               bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -204,23 +204,23 @@ class ExpenseTrackerApp extends StatelessWidget {
                 filled: true,
                 fillColor: const Color(0xFF1C1F26),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                  horizontal: 16,
+                  vertical: 14,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
                     color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
                     color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
                     color: Color(0xFFE2C08D),
                     width: 2,

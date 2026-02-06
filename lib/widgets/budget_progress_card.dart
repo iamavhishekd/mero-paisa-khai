@@ -33,18 +33,18 @@ class BudgetProgressCard extends StatelessWidget {
     });
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.01),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -90,7 +90,7 @@ class BudgetProgressCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           ...budgetedCategories.map((category) {
             final spent = _calculateSpent(category);
             final budget = category.budget!;
@@ -99,7 +99,7 @@ class BudgetProgressCard extends StatelessWidget {
             final color = Color(int.parse(category.color));
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Column(
                 children: [
                   Row(
@@ -147,26 +147,26 @@ class BudgetProgressCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Stack(
                     children: [
                       Container(
-                        height: 8,
+                        height: 6,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.05,
                           ),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       FractionallySizedBox(
                         widthFactor: percentage,
                         child: Container(
-                          height: 8,
+                          height: 6,
                           decoration: BoxDecoration(
                             color: isOverBudget ? Colors.red : color,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                       ),

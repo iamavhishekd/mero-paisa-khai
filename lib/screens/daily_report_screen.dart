@@ -44,7 +44,7 @@ class DailyReportScreen extends StatelessWidget {
               .fold(0.0, (sum, t) => sum + t.amount);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -59,9 +59,9 @@ class DailyReportScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 _buildSummaryCard(context, totalIncome, totalExpense),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 if (totalExpense > 0) ...[
                   const Text(
                     'SPENDING BREAKDOWN',
@@ -71,12 +71,12 @@ class DailyReportScreen extends StatelessWidget {
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
+                    height: 180,
                     child: _buildChart(context, todayTransactions),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                 ],
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -158,18 +158,18 @@ class DailyReportScreen extends StatelessWidget {
     final net = income - expense;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -186,7 +186,7 @@ class DailyReportScreen extends StatelessWidget {
           Text(
             '\$${net.abs().toStringAsFixed(2)}',
             style: TextStyle(
-              fontSize: 48,
+              fontSize: 36,
               fontWeight: FontWeight.w900,
               color: net >= 0
                   ? const Color(0xFF4ADE80)
@@ -370,10 +370,10 @@ class DailyReportScreen extends StatelessWidget {
     final isExpense = transaction.type == TransactionType.expense;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
         ),

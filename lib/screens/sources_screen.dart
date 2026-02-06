@@ -80,7 +80,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
         final isNarrow = constraints.maxWidth < 600;
         final hPadding = isNarrow ? 16.0 : 24.0;
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 24),
+          padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -119,7 +119,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                       'Sources',
                       style: theme.textTheme.displayLarge?.copyWith(
                         letterSpacing: -1,
-                        fontSize: isNarrow ? 28 : 40,
+                        fontSize: isNarrow ? 24 : 32,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -135,11 +135,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
                   elevation: 2,
                   shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isNarrow ? 16 : 28,
+                    horizontal: isNarrow ? 14 : 20,
                   ),
-                  minimumSize: const Size(0, 52),
+                  minimumSize: const Size(0, 48),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Row(
@@ -213,11 +213,11 @@ class _SourcesScreenState extends State<SourcesScreen> {
   Widget _buildSourceItem(Source source, double balance) {
     final theme = Theme.of(context);
     return Container(
-      height: 210,
-      padding: const EdgeInsets.all(20),
+      height: 180,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
         ),
@@ -232,9 +232,9 @@ class _SourcesScreenState extends State<SourcesScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(source.icon, style: const TextStyle(fontSize: 24)),
+                child: Text(source.icon, style: const TextStyle(fontSize: 20)),
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded, size: 20),
@@ -333,7 +333,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
                 decoration: BoxDecoration(
                   color: theme.scaffoldBackgroundColor,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(32),
+                    top: Radius.circular(24),
                   ),
                 ),
                 child: Column(

@@ -33,7 +33,6 @@ class HiveService {
 
     if (!initialSetupDone) {
       await _initializeDefaultCategories();
-      await _initializeDefaultSources();
       await settings.put('initial_setup_done', true);
     }
   }
@@ -103,40 +102,6 @@ class HiveService {
     }
   }
 
-  static Future<void> _initializeDefaultSources() async {
-    final box = Hive.box<Source>(sourcesBox);
-
-    if (box.isEmpty) {
-      final defaultSources = [
-        const Source(
-          id: 's1',
-          name: 'Main Bank',
-          type: SourceType.bank,
-          icon: '🏦',
-          color: '0xFF000000',
-        ),
-        const Source(
-          id: 's2',
-          name: 'Digital Wallet',
-          type: SourceType.wallet,
-          icon: '📱',
-          color: '0xFF000000',
-        ),
-        const Source(
-          id: 's3',
-          name: 'Physical Cash',
-          type: SourceType.cash,
-          icon: '💵',
-          color: '0xFF000000',
-        ),
-      ];
-
-      for (final Source source in defaultSources) {
-        await box.put(source.id, source);
-      }
-    }
-  }
-
   static Box<Transaction> get transactionsBoxInstance =>
       Hive.box<Transaction>(transactionsBox);
 
@@ -177,7 +142,6 @@ class HiveService {
 
     // Re-initialize defaults
     await _initializeDefaultCategories();
-    await _initializeDefaultSources();
     await settingsBoxInstance.put('initial_setup_done', true);
   }
 }

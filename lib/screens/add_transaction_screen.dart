@@ -249,7 +249,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               hPadding,
                               0,
                               hPadding,
-                              100,
+                              80,
                             ),
                             child: Form(
                               key: _formKey,
@@ -268,16 +268,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                           children: [
                                             _buildIdentificationSection(),
                                             SizedBox(
-                                              height: isNarrow ? 20 : 32,
+                                              height: isNarrow ? 16 : 24,
                                             ),
                                             _buildPreferencesSection(),
                                             SizedBox(
-                                              height: isNarrow ? 20 : 32,
+                                              height: isNarrow ? 16 : 24,
                                             ),
                                             _buildSourcesSection(),
                                             if (!isWide) ...[
                                               SizedBox(
-                                                height: isNarrow ? 20 : 32,
+                                                height: isNarrow ? 16 : 24,
                                               ),
                                               _buildAmountAndDateSection(),
                                             ],
@@ -321,7 +321,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         return Padding(
           padding: EdgeInsets.symmetric(
             horizontal: isNarrow ? 16 : 32,
-            vertical: isNarrow ? 16 : 24,
+            vertical: isNarrow ? 12 : 16,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -363,7 +363,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           : 'New Transaction',
                       style: theme.textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: isNarrow ? (isVeryNarrow ? 22 : 26) : 36,
+                        fontSize: isNarrow ? (isVeryNarrow ? 20 : 24) : 32,
                         letterSpacing: -1,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -398,9 +398,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       padding: EdgeInsets.symmetric(
                         horizontal: isVeryNarrow ? 20 : 32,
                       ),
-                      minimumSize: const Size(0, 52),
+                      minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ).copyWith(
                       elevation: WidgetStateProperty.resolveWith<double>((
@@ -438,11 +438,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     alpha: 0.05,
                   ),
                   foregroundColor: theme.colorScheme.onSurface,
-                  minimumSize: const Size(52, 52),
-                  fixedSize: const Size(52, 52),
+                  minimumSize: const Size(48, 48),
+                  fixedSize: const Size(48, 48),
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -862,7 +862,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             color: isSelected
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: widget.transactionToEdit != null && isSelected
                 ? Border.all(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.2),

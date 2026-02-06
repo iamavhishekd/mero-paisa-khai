@@ -272,7 +272,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         final hPadding = isNarrow ? 16.0 : 24.0;
 
         return Padding(
-          padding: EdgeInsets.fromLTRB(hPadding, 24, hPadding, 16),
+          padding: EdgeInsets.fromLTRB(hPadding, 16, hPadding, 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -311,7 +311,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                       'Transaction History',
                       style: theme.textTheme.displayLarge?.copyWith(
                         letterSpacing: -1,
-                        fontSize: isNarrow ? 26 : 36,
+                        fontSize: isNarrow ? 24 : 32,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -352,11 +352,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         },
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.symmetric(
-            horizontal: isNarrow ? 14 : 24,
-            vertical: isNarrow ? 14 : 18,
+            horizontal: isNarrow ? 12 : 20,
+            vertical: isNarrow ? 12 : 16,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
@@ -390,7 +390,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
           ),
@@ -671,7 +671,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     ),
                   ),
           ),
-          secondChild: const SizedBox(height: 8),
+          secondChild: const SizedBox(height: 4),
           crossFadeState: _isFilterExpanded
               ? CrossFadeState.showFirst
               : CrossFadeState.showSecond,

@@ -5,6 +5,7 @@ import 'package:paisa_khai/router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:universal_platform/universal_platform.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -199,7 +200,10 @@ class NotificationService {
 
     // For standard reminders, inexact is battery-friendly and doesn't require special permissions.
     // We check if we have permission for exact, otherwise fallback to inexact.
-    final bool canScheduleExact = await Permission.scheduleExactAlarm.isGranted;
+    bool canScheduleExact = false;
+    if (UniversalPlatform.isAndroid) {
+      canScheduleExact = await Permission.scheduleExactAlarm.isGranted;
+    }
 
     try {
       await _notificationsPlugin.zonedSchedule(
@@ -277,7 +281,10 @@ class NotificationService {
     );
 
     // Same fallback logic here
-    final bool canScheduleExact = await Permission.scheduleExactAlarm.isGranted;
+    bool canScheduleExact = false;
+    if (UniversalPlatform.isAndroid) {
+      canScheduleExact = await Permission.scheduleExactAlarm.isGranted;
+    }
 
     try {
       await _notificationsPlugin.zonedSchedule(
