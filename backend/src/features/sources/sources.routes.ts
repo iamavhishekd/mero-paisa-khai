@@ -1,7 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "@/shared/db";
-import { sources, type NewSource } from "./sources.schema";
-import { eq, and } from "drizzle-orm";
+import { sourcesService } from "./sources.service";
 import { authMiddleware } from "@/features/auth/auth.middleware";
 
 interface SourceBody {
@@ -19,12 +17,7 @@ router.use(authMiddleware);
 router.get("/", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
-
-    const userSources = await db
-      .select()
-      .from(sources)
-      .where(eq(sources.userId, userId))
-      .orderBy(sources.createdAt);
+    const userSources = await sourcesService.getAll(userId);
 
     res.json({
       success: true,
@@ -43,14 +36,9 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
     const sourceId = req.params.id;
+    const source = await sourcesService.getById(userId, sourceId);
 
-    const foundSources = await db
-      .select()
-      .from(sources)
-      .where(and(eq(sources.id, sourceId), eq(sources.userId, userId)))
-      .limit(1);
-
-    if (foundSources.length === 0) {
+    if (!source) {
       res.status(404).json({
         success: false,
         message: "Source not found",
@@ -60,7 +48,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: foundSources[0],
+      data: source,
     });
   } catch (error) {
     console.error("Get source error:", error);
@@ -74,7 +62,8 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
-    const { name, type, icon, color, initialBalance } = req.body as SourceBody;
+    const body = req.body as SourceBody;
+    const { name, type, icon, color } = body;
 
     if (!name || !type || !icon || !color) {
       res.status(400).json({
@@ -93,22 +82,15 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const newSource = await db
-      .insert(sources)
-      .values({
-        userId: userId,
-        name: name,
-        type: type,
-        icon: icon,
-        color: color,
-        initialBalance: initialBalance || 0,
-      })
-      .returning();
+    const newSource = await sourcesService.create({
+      userId,
+      ...body,
+    });
 
     res.status(201).json({
       success: true,
       message: "Source created successfully",
-      data: newSource[0],
+      data: newSource,
     });
   } catch (error) {
     console.error("Create source error:", error);
@@ -123,22 +105,8 @@ router.put("/:id", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
     const sourceId = req.params.id;
-    const { name, type, icon, color, initialBalance } =
-      req.body as Partial<SourceBody>;
-
-    const existingSources = await db
-      .select()
-      .from(sources)
-      .where(and(eq(sources.id, sourceId), eq(sources.userId, userId)))
-      .limit(1);
-
-    if (existingSources.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "Source not found",
-      });
-      return;
-    }
+    const body = req.body as Partial<SourceBody>;
+    const { type } = body;
 
     if (type) {
       const validTypes = ["bank", "wallet", "cash"];
@@ -151,29 +119,25 @@ router.put("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const updateData: Partial<NewSource> = {
-      updatedAt: new Date(),
-    };
-
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type;
-    if (icon !== undefined) updateData.icon = icon;
-    if (color !== undefined) updateData.color = color;
-    if (initialBalance !== undefined)
-      updateData.initialBalance = initialBalance;
-
-    const updatedSource = await db
-      .update(sources)
-      .set(updateData)
-      .where(eq(sources.id, sourceId))
-      .returning();
+    const updatedSource = await sourcesService.update({
+      userId,
+      id: sourceId,
+      ...body,
+    });
 
     res.json({
       success: true,
       message: "Source updated successfully",
-      data: updatedSource[0],
+      data: updatedSource,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Source not found") {
+      res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     console.error("Update source error:", error);
     res.status(500).json({
       success: false,
@@ -187,27 +151,20 @@ router.delete("/:id", async (req: Request, res: Response) => {
     const userId = req.userId!;
     const sourceId = req.params.id;
 
-    const existingSources = await db
-      .select()
-      .from(sources)
-      .where(and(eq(sources.id, sourceId), eq(sources.userId, userId)))
-      .limit(1);
-
-    if (existingSources.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "Source not found",
-      });
-      return;
-    }
-
-    await db.delete(sources).where(eq(sources.id, sourceId));
+    await sourcesService.delete(userId, sourceId);
 
     res.json({
       success: true,
       message: "Source deleted successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Source not found") {
+      res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     console.error("Delete source error:", error);
     res.status(500).json({
       success: false,

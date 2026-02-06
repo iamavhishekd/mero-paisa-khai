@@ -1,7 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "@/shared/db";
-import { categories, type NewCategory } from "./categories.schema";
-import { eq, and } from "drizzle-orm";
+import { categoriesService } from "./categories.service";
 import { authMiddleware } from "@/features/auth/auth.middleware";
 
 interface CategoryBody {
@@ -19,12 +17,7 @@ router.use(authMiddleware);
 router.get("/", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
-
-    const userCategories = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.userId, userId))
-      .orderBy(categories.createdAt);
+    const userCategories = await categoriesService.getAll(userId);
 
     res.json({
       success: true,
@@ -43,14 +36,9 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
     const categoryId = req.params.id;
+    const category = await categoriesService.getById(userId, categoryId);
 
-    const foundCategories = await db
-      .select()
-      .from(categories)
-      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
-      .limit(1);
-
-    if (foundCategories.length === 0) {
+    if (!category) {
       res.status(404).json({
         success: false,
         message: "Category not found",
@@ -60,7 +48,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: foundCategories[0],
+      data: category,
     });
   } catch (error) {
     console.error("Get category error:", error);
@@ -74,7 +62,8 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
-    const { name, type, icon, color, budget } = req.body as CategoryBody;
+    const body = req.body as CategoryBody;
+    const { name, type, icon, color, budget } = body;
 
     if (!name || !type || !icon || !color) {
       res.status(400).json({
@@ -93,22 +82,15 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const newCategory = await db
-      .insert(categories)
-      .values({
-        userId: userId,
-        name: name,
-        type: type,
-        icon: icon,
-        color: color,
-        budget: budget || null,
-      })
-      .returning();
+    const newCategory = await categoriesService.create({
+      userId,
+      ...body,
+    });
 
     res.status(201).json({
       success: true,
       message: "Category created successfully",
-      data: newCategory[0],
+      data: newCategory,
     });
   } catch (error) {
     console.error("Create category error:", error);
@@ -123,22 +105,8 @@ router.put("/:id", async (req: Request, res: Response) => {
   try {
     const userId = req.userId!;
     const categoryId = req.params.id;
-    const { name, type, icon, color, budget } =
-      req.body as Partial<CategoryBody>;
-
-    const existingCategories = await db
-      .select()
-      .from(categories)
-      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
-      .limit(1);
-
-    if (existingCategories.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
-      return;
-    }
+    const body = req.body as Partial<CategoryBody>;
+    const { type } = body;
 
     if (type) {
       const validTypes = ["income", "expense", "both"];
@@ -151,28 +119,25 @@ router.put("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const updateData: Partial<NewCategory> = {
-      updatedAt: new Date(),
-    };
-
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type;
-    if (icon !== undefined) updateData.icon = icon;
-    if (color !== undefined) updateData.color = color;
-    if (budget !== undefined) updateData.budget = budget;
-
-    const updatedCategory = await db
-      .update(categories)
-      .set(updateData)
-      .where(eq(categories.id, categoryId))
-      .returning();
+    const updatedCategory = await categoriesService.update({
+      userId,
+      id: categoryId,
+      ...body,
+    });
 
     res.json({
       success: true,
       message: "Category updated successfully",
-      data: updatedCategory[0],
+      data: updatedCategory,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Category not found") {
+      res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     console.error("Update category error:", error);
     res.status(500).json({
       success: false,
@@ -186,27 +151,20 @@ router.delete("/:id", async (req: Request, res: Response) => {
     const userId = req.userId!;
     const categoryId = req.params.id;
 
-    const existingCategories = await db
-      .select()
-      .from(categories)
-      .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
-      .limit(1);
-
-    if (existingCategories.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "Category not found",
-      });
-      return;
-    }
-
-    await db.delete(categories).where(eq(categories.id, categoryId));
+    await categoriesService.delete(userId, categoryId);
 
     res.json({
       success: true,
       message: "Category deleted successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Category not found") {
+      res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
     console.error("Delete category error:", error);
     res.status(500).json({
       success: false,
